@@ -1,0 +1,40 @@
+#
+# Copyright (c) 2022-2025, German Rivera
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# NOTE: This crate is not meant to be built with the native compiler.
+# A dependency on a cross-compiler must be specified in the client
+# crate. See example client crates in the sample_apps folder.
+#
+name = "aarch64_baremetal_ada"
+description = "AArch64 Baremetal Ada"
+version = "2.0.0"
+licenses = "Apache-2.0"
+website = "https://github.com/jgrivera67/aarch64_bare_metal_ada"
+tags = ["aarch64"]
+authors = ["J. German Rivera"]
+maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
+maintainers-logins = ["jgrivera67"]
+auto-gpr-with=false
+project-files = [
+   "aarch64_hello_ada/aarch64_hello_ada.gpr",
+   "uart_boot_loader/uart_boot_loader.gpr",
+   "uart_boot_loader_client/uart_boot_loader_client.gpr"
+]
+
+[[actions]]
+type = "test"
+command = ["alr", "build"]
+directory = "aarch64_hello_ada"
+
+[[actions]]
+type = "test"
+command = ["alr", "build"]
+directory = "uart_boot_loader"
+
+[[actions]]
+type = "test"
+command = ["alr", "build"]
+directory = "uart_boot_loader_client"
+

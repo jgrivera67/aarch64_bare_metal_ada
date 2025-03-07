@@ -1,0 +1,37 @@
+with "../../baremetal_compiler_flags.gpr";
+
+project Portable_Minimal_Ada_Rts is
+
+   for Target use Baremetal_Compiler_Flags.Target_Compiler_Selector;
+   for Runtime ("Ada") use  Project'Project_Dir;
+   for Languages use ("Ada");
+
+   --  NOTE: the library name needs to be 'gnat' so that '-lgnat' can work.
+   for Library_Name use "gnat";
+
+   for Source_Dirs use ("src/");
+   for Object_Dir use "obj/";
+   for Create_Missing_Dirs use "True";
+   for Library_Dir use "lib";
+
+   type Library_Type_Type is ("relocatable", "static", "static-pic");
+   Library_Type : Library_Type_Type :=
+     external ("PORTABLE_MINIMAL_ADA_RTS_LIBRARY_TYPE", external ("LIBRARY_TYPE", "static"));
+   for Library_Kind use Library_Type;
+
+   for Library_Auto_Init use "False";
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+         ("-gnatg",     -- Internal GNAT implementation mode to compile runtime library
+          "-nostdinc",  -- Inhibit the search of the default location for the GNAT Run Time Library (RTL) source files.
+          "-nostdlib")  -- Inhibit the search of the default location for the GNAT Run Time Library (RTL) ALI files.
+         &
+         Baremetal_Compiler_Flags.Compiler.ADAFLAGS;
+   end Compiler;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+end Portable_Minimal_Ada_Rts;

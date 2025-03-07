@@ -1,0 +1,12 @@
+name = "uart_boot_loader_client"
+description = "UART bootloader client"
+version = "0.1.0-dev"
+
+authors = ["J. German Rivera"]
+maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
+maintainers-logins = ["jgrivera67"]
+licenses = "Apache-2.0"
+website = ""
+tags = ["uart", "bootloader"]
+
+executables = ["uart_boot_loader_client"]
