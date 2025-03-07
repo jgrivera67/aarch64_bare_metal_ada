@@ -1,0 +1,15 @@
+20250305193145
+-c
+-x
+assembler-with-cpp
+-mcpu=cortex-a72+nosimd
+-march=armv8-a
+-mlittle-endian
+-mabi=lp64
+-I/opt/gcc-14.2.0-aarch64-elf/lib/gcc/aarch64-elf/14.2.0/include
+-fno-omit-frame-pointer
+-fcallgraph-info=su,da
+-ffunction-sections
+-fdata-sections
+-fstack-usage
+-Wall

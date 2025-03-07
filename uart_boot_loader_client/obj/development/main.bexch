@@ -1,0 +1,20 @@
+[GENERATED OBJECT FILE]
+b__main.o
+[PROJECT FILES]
+/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/uart_boot_loader_client.gpr
+20250306171552 0fb365110b3d560fbb799a0a4cfab095
+/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/config/uart_boot_loader_client_config.gpr
+20250306171809 d30926be9150c67f73049642a7fb794e
+[BOUND OBJECT FILES]
+/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/obj/development/uart_boot_loader_client.o
+/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/obj/development/main.o
+[GENERATED SOURCE FILES]
+b__main.ads
+b__main.adb
+b__main.ali
+[RESULTING OPTIONS]
+-L/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/obj/development/
+-L/Users/jgrivera/my-projects/uart_boot_loader/uart_boot_loader_client/obj/development/
+-L/Users/jgrivera/.alire/lib/gcc/aarch64-apple-darwin23.5.0/14.1.0/adalib/
+-static
+/Users/jgrivera/.alire/lib/gcc/aarch64-apple-darwin23.5.0/14.1.0/adalib/libgnat.a

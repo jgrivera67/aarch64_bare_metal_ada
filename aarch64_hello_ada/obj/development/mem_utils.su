@@ -1,0 +1,7 @@
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:38:20:memcpy32	80	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:64:7:memcpy	160	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:134:20:memcpy32_backwards	64	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:161:7:memmove	96	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:212:20:memset32	80	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:247:7:memset	96	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:287:5:memcmp	80	static

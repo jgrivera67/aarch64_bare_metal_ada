@@ -1,0 +1,33 @@
+name = "uart_boot_loader"
+description = "Hello world app for RaspberryPI 4"
+version = "0.1.0-dev"
+
+authors = ["J. German Rivera"]
+maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
+maintainers-logins = ["jgrivera67"]
+
+executables = ["uart_boot_loader"]
+
+[[depends-on]]
+gnat_aarch64_elf = "*"
+gnatprove = "*"
+#gprbuild = "^22" # needed by alire-index CI builds
+gprbuild = "*" # needed by alire-index CI builds
+
+[configuration.values]
+hirtos.Platform = "raspberry_pi4"
+
+[[pins]]
+hirtos = { path='../..' }
+
+[gpr-set-externals]
+CPU_Core = "arm_cortex_a72"
+
+[build-profiles]
+hirtos = "development"
+
+[[actions]]
+[actions.'case(os)'.windows]
+[actions.'case(os)'.'...']
+type = "post-build"
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/uart_boot_loader.elf > bin/uart_boot_loader.lst; aarch64-elf-objcopy -O binary bin/uart_boot_loader.elf bin/uart_boot_loader.bin"]

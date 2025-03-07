@@ -1,0 +1,4 @@
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader-xmodem_protocol.adb:41:7:Handle_Eot	16	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader-xmodem_protocol.adb:18:7:Receive_Packet_Data	64	static
+<built-in>:maybe_checksum_typeIP	0	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader-xmodem_protocol.adb:15:4:Receive_File	64	static

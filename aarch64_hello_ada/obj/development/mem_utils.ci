@@ -1,0 +1,14 @@
+graph: { title: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c"
+node: { title: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memcpy32" label: "memcpy32\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:38:20\n80 bytes (static)\n0 dynamic objects" }
+node: { title: "memcpy" label: "memcpy\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:64:7\n160 bytes (static)\n0 dynamic objects" }
+edge: { sourcename: "memcpy" targetname: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memcpy32" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:102:8" }
+node: { title: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memcpy32_backwards" label: "memcpy32_backwards\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:134:20\n64 bytes (static)\n0 dynamic objects" }
+node: { title: "memmove" label: "memmove\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:161:7\n96 bytes (static)\n0 dynamic objects" }
+edge: { sourcename: "memmove" targetname: "memcpy" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:165:9" }
+edge: { sourcename: "memmove" targetname: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memcpy32" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:172:6" }
+edge: { sourcename: "memmove" targetname: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memcpy32_backwards" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:187:6" }
+node: { title: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memset32" label: "memset32\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:212:20\n80 bytes (static)\n0 dynamic objects" }
+node: { title: "memset" label: "memset\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:247:7\n96 bytes (static)\n0 dynamic objects" }
+edge: { sourcename: "memset" targetname: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:memset32" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:268:8" }
+node: { title: "memcmp" label: "memcmp\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/mem_utils.c:287:5\n80 bytes (static)\n0 dynamic objects" }
+}

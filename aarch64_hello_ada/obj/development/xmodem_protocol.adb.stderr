@@ -1,0 +1,2 @@
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/xmodem_protocol.adb:5:30: warning: file name does not match unit name, should be "uart_boot_loader-xmodem_protocol.adb" [enabled by default]
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/xmodem_protocol.adb:5:30: error: file "uart_boot_loader-xmodem_protocol.ads" not found

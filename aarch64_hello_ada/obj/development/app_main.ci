@@ -1,0 +1,7 @@
+graph: { title: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/app_main.adb"
+node: { title: "_ada_app_main" label: "App_Main\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/app_main.adb:11:1\n16 bytes (static)\n0 dynamic objects" }
+node: { title: "uart_boot_loader__load_image_over_uart" label: "Load_Image_Over_Uart\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.ads:12:14" shape : ellipse }
+edge: { sourcename: "_ada_app_main" targetname: "uart_boot_loader__load_image_over_uart" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/app_main.adb:14:20" }
+node: { title: "uart_boot_loader__jump_to_image_reset_handler" label: "Jump_To_Image_Reset_Handler\n/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.ads:14:14" shape : ellipse }
+edge: { sourcename: "_ada_app_main" targetname: "uart_boot_loader__jump_to_image_reset_handler" label: "/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/app_main.adb:15:20" }
+}

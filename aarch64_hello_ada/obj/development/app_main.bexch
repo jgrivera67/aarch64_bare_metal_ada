@@ -1,0 +1,28 @@
+[GENERATED OBJECT FILE]
+b__app_main.o
+[PROJECT FILES]
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/uart_boot_loader.gpr
+20250304224731 2ecae8b33490d583ea8b1d2ef0e2a858
+/Users/jgrivera/my-projects/HiRTOS/third_party/portable_minimal_ada_rts/portable_minimal_ada_rts.gpr
+20240723034042 2f79f96af36ed36c079f0344c856a9cf
+/Users/jgrivera/my-projects/HiRTOS/hirtos_compiler_flags.gpr
+20250228035600 03b8e01596b328891a97519b294db9d3
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/config/uart_boot_loader_config.gpr
+20250305002205 197ebd5b1308312b1880e64e2d06a9ee
+[BOUND OBJECT FILES]
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/bit_sized_integer_types.o
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/uart_driver.o
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/uart_boot_loader-xmodem_protocol.o
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/uart_boot_loader.o
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/app_main.o
+[GENERATED SOURCE FILES]
+b__app_main.ads
+b__app_main.adb
+b__app_main.ali
+[RESULTING OPTIONS]
+-L/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/
+-L/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/obj/development/
+-L/Users/jgrivera/my-projects/HiRTOS/third_party/portable_minimal_ada_rts/lib/
+-L/Users/jgrivera/my-projects/HiRTOS/third_party/portable_minimal_ada_rts/obj/
+-static
+/Users/jgrivera/my-projects/HiRTOS/third_party/portable_minimal_ada_rts/lib/libgnat.a

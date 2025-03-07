@@ -1,0 +1,48 @@
+# THIS FILE IS GENERATED. DO NOT EDIT.
+
+[solution]
+[solution.context]
+solved = true
+[[solution.state]]
+crate = "gnat_aarch64_elf"
+fulfilment = "missed"
+pinned = false
+reason = "unknown"
+transitivity = "direct"
+versions = "*"
+[[solution.state]]
+crate = "gnatprove"
+fulfilment = "missed"
+pinned = false
+reason = "unavailable"
+transitivity = "direct"
+versions = "*"
+[[solution.state]]
+crate = "gprbuild"
+fulfilment = "solved"
+pinned = false
+transitivity = "direct"
+versions = "*"
+[solution.state.release]
+description = "The GPRBuild Ada/multilanguage build tool"
+maintainers = [
+"alejandro@mosteo.com",
+]
+maintainers-logins = [
+"mosteo",
+]
+name = "gprbuild"
+notes = "Detected at /opt/gcc-14.2.0-3-aarch64/bin/gprbuild"
+version = "25.0.0"
+[solution.state.release.origin]
+url = "external:path /opt/gcc-14.2.0-3-aarch64/bin/gprbuild"
+[[solution.state]]
+crate = "hirtos"
+fulfilment = "linked"
+pinned = false
+transitivity = "direct"
+versions = "^2.0.0"
+[solution.state.link]
+lockfiled = true
+path = "../.."
+

@@ -1,0 +1,2 @@
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader-xmodem_protocol.adb:82:60: (style) space not allowed [-gnatyt]
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader-xmodem_protocol.adb:94:12: (style) bad column [-gnaty0]

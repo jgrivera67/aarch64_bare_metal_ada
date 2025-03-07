@@ -1,0 +1,8 @@
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:53:7:Unsigned_To_Decimal_String	80	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.ads:39:4:Get_Timer_Timestamp_Usec	16	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:26:4:Jump_To_Image_Reset_Handler	0	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:35:4:Print_String	64	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:16:4:Load_Image_Over_Uart	32	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:50:4:Print_Number_Decimal	64	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:98:4:Receive_Byte_With_Timeout	32	static
+/Users/jgrivera/my-projects/HiRTOS/sample_apps/uart_boot_loader/src/uart_boot_loader.adb:113:4:Last_Chance_Handler	80	dynamic
