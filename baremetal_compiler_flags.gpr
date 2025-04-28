@@ -29,6 +29,18 @@ abstract project Baremetal_Compiler_Flags is
               null;
    end case;
 
+   type Uart_Boot_Type is ("no", "yes");
+
+   Uart_Boot : Uart_Boot_Type := External ("Uart_Boot", "no");
+
+   Linker_Script_Path := "";
+   case Uart_Boot is
+      when "yes" =>
+         Linker_Script_Path := "../../../common_src/uart_boot_memory_layout.ld";
+      when "no" =>
+         Linker_Script_Path := "../../../common_src/kernel8_img_memory_layout.ld";
+   end case;
+
    package Compiler is
       --  COMMON_FLAGS here is common flags (used for C and Ada).
       COMMON_FLAGS := CPU_Core_Switches &

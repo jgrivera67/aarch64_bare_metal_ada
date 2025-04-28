@@ -39,7 +39,7 @@ project Aarch64_Hello_Ada is
           "-lgcc", -- needed for __aeabi_uldivmod
           "-Wl,-Map=" & "../../bin/" & Executable_Prefix & ".map",
 	       "-Xlinker", "--gc-sections",
-	       "-T../../../common_src/kernel8_img_memory_layout.ld");
+	       "-T" & Baremetal_Compiler_Flags.Linker_Script_Path);
    end Linker;
 
    package Builder is

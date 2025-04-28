@@ -15,6 +15,15 @@ package body Uart_Boot_Loader is
    procedure Load_Image_Over_Uart (Load_Address : System.Address) is
    begin
       Receive_File (Load_Address);
+
+      --
+      --  Send dummy bytes to give time to UART terminal emulator to
+      --  switch from file transfer mode to console mode.
+      --
+      for I in 1 .. 64 loop
+         Uart_Driver.Put_Char (ASCII.NUL);
+      end loop;
+
       Jump_To_Image_Reset_Handler (Load_Address);
    end Load_Image_Over_Uart;
 

@@ -11,7 +11,15 @@ with Uart_Driver;
 package Utils is
    use type Interfaces.Unsigned_64;
 
+   Instruction_Size_In_Bytes : constant := 4;
+
+   Cache_Line_Size_In_Bytes : constant := 64;
+
+   Page_Size_In_Bytes : constant := 4_096;
+
    type Byte_Array_Type is array (Positive range <>) of Interfaces.Unsigned_8;
+
+   procedure Put_Char (C : Character);
 
    procedure Print_String (S : String; End_Line : Boolean := False);
 
@@ -24,11 +32,15 @@ package Utils is
    function Receive_Byte_With_Timeout (Timeout_Usec : Interfaces.Unsigned_64)
       return Uart_Driver.Maybe_Byte_Type;
 
+   function Get_Char return Character renames Uart_Driver.Get_Char;
+
    function Compute_Checksum (Bytes_Array : Byte_Array_Type)
       return Interfaces.Unsigned_32;
 
    function Get_Code_Location_Here return System.Address
       with Inline_Always;
+
+   function Get_ELR_EL1 return Interfaces.Unsigned_64;
 
    procedure Wait_For_Interrupt with Inline_Always;
 

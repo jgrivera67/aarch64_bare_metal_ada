@@ -1,21 +1,12 @@
----
-marp: false
-title: Tutorial
-author: J. German Rivera
-paginate: true
----
 # Developing Bare-metal Embedded Software in SPARK Ada for 64-bit ARM Platforms
-**J. German Rivera**
-
+*J. German Rivera*<br>
 josegrivera@tesla.com
----
----
-<!--
+
 This tutorial teaches how to develop 64-bit bare-metal embedded software for the
 64-bit ARMv8-A (AArch64) architecture in SPARK Ada.
 The Raspberry PI 4 (model B) board will be used as the target platform. The
 tutorial will start by explaining how to build the GNAT
-cross-toolchain for barematal AArch64 (aarch64-elf).
+cross-toolchain for bare-metal AArch64 (aarch64-elf).
 Then it will describe how to write your own UART boot loader for the Raspberry PI,
 to make testing bare-metal code on the board easier.
 Next, it will describe how to write a self-hosted bare-metal mini GDB server,
@@ -30,7 +21,6 @@ to bring their own RaspberryPI boards (4 model B or later), a microSD card alrea
 formatted with Raspbian, a development laptop (preferably running Linux or
 MacOS) with a microSD card reader, and a USB-to-serial cable to connect the
 laptop to the Raspberry PI's UART0 serial port.
--->
 
 ## Topics
 - [How to build the GNAT cross-tool chain from sources for bare-metal AArch64](#section_1)
@@ -47,7 +37,6 @@ laptop to the Raspberry PI's UART0 serial port.
 - Designing a simple multicore RTOS
 - Writing the RTOS thread scheduler in SPARK Ada
 - Writing the RTOS thread synchronization primitives in SPARK Ada
----
 
 <a id="section_1"></a>
 ## How to build the GNAT cross-tool chain from sources for bare-metal AArch64
@@ -67,11 +56,51 @@ Run script [build_aarch64_elf_gnat_toolchain_on_macos.sh](./third_party/build_aa
 
 <a id="section_4"></a>
 ## Setting up Raspberry PI board for bare-metal development
-- Install Raspberry Pi OS on a blank SD card using the Raspberry Pi Imager
+- Install Raspberry Pi OS (64-bit) on a blank SD card using the Raspberry Pi Imager
   [tool](https://www.raspberrypi.com/software/)
 
-- Enable UART console on the Raspberry PI board, by adding the following to the SD card
-  `config.txt` file:
+### Enable UART console on the Raspberry PI board
+
+For RaspberryPI 4, mount the formatted SD card on your development host and add the following to the `config.txt` file on the SD card:
+```
+# Run in 64-bit mode
+arm_64bit=1
+
+# Enable UART0
+enable_uart=1
+core_freq_min=500
+dtoverlay=disable-bt
+uart_2ndstage=1
+```
+
+For Raspberry PI5, add the following the the `config.txt` file on the SD card:
 ```
 enable_uart=1
+dtparam=uart0=on
+core_freq_min=500
+dtoverlay=disable-bt
+uart_2ndstage=1
 ```
+
+Install the corresponding device driver for the serial to USB cable, for
+your development host. For example, for
+the PL2303TA USB to TTL Serial Cable, for MacOS, download and install [this driver](https://www.prolific.com.tw/us/showproduct.aspx?p_id=229&pcid=41).
+For Linux, The PL2303 driver is in the mainline Linux kernel.
+
+### Booting a 64-bit bare-metal program on the Raspberry PI
+
+The sequence diagram below shows the boot sequence on the Raspberry PI 4:
+![](uml_diagrams/raspberrypi4_boot_sequence.png)
+
+The last boot stage loads an image with the name `kerne8l.img` from the SD card.
+Normally, `kernel8.img` is a 64-bit Linux kernel. However, for bare-metal
+development, we are going to copy our bare-metal executable binary (`.bin` file)
+as `kernel8.img` on the SD card.
+
+For example on MacOS, the SD card is mounted as `/Volumes/bootfs`. So,
+we can copy our binary to the SD card as follows:
+```
+cp $bin_file /Volumes/bootfs/kernel8.img
+sync
+```
+![](memory_map.drawio.svg)

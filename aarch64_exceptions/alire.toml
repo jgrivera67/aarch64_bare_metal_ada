@@ -1,12 +1,12 @@
-name = "aarch64_hello_ada"
-description = "AArch64 Hello world program"
+name = "aarch64_exceptions"
+description = "AArch64 Exceptions test program"
 version = "0.1.0-dev"
 
 authors = ["J. German Rivera"]
 maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
 maintainers-logins = ["jgrivera67"]
 
-executables = ["aarch64_hello_ada"]
+executables = ["aarch64_exceptions"]
 
 [[depends-on]]
 gnat_aarch64_elf = "*"
@@ -20,4 +20,4 @@ CPU_Core = "arm_cortex_a72"
 [actions.'case(os)'.windows]
 [actions.'case(os)'.'...']
 type = "post-build"
-command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/aarch64_hello_ada.elf > bin/aarch64_hello_ada.lst; aarch64-elf-objcopy -O binary bin/aarch64_hello_ada.elf bin/aarch64_hello_ada.bin"]
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/aarch64_exceptions.elf > bin/aarch64_exceptions.lst; aarch64-elf-objcopy -O binary bin/aarch64_exceptions.elf bin/aarch64_exceptions.bin"]

@@ -11,7 +11,44 @@
 .global reset_handler
 reset_handler:
     /*
-     * Use only CPU core 0:
+     * Check if we booted at EL2 or at EL1
+     *
+     * NOTE: Normally we are booted at EL2, but when booted from
+     * the UARt boot loader can go back to the UART boot loader at EL1.
+     */
+    mrs    x0, CurrentEL
+    and    x0, x0, #PSTATE_EL_MASK
+    cmp    x0, #PSTATE_EL_EL2_MASK
+    bne    reset_handler_el1
+
+    msr sctlr_el1, xzr
+
+    /*
+     * Set the execution state for EL1 to be AArch64:
+     */
+    mov x0, #HCR_EL2_RW_MASK
+    msr hcr_el2, x0
+
+    /*
+     * Transition from EL2 to EL1, by returning from an EL2 exception into EL1.
+     * Return to EL1 with all exceptions/interrupts disabled and using SP_EL0 stack pointer.
+     */
+    mov x0, #(PSTATE_DAIF_MASK | PSTATE_EL_EL1_MASK)
+    msr spsr_el2, x0
+    adr x0, reset_handler_el1
+    msr elr_el2, x0
+    eret
+
+reset_handler_el1:
+    /*
+     * Set pointer to interrupt vector table:
+     */
+    adrp x0, interrupt_vector_table
+    add x0, x0, #:lo12:interrupt_vector_table
+    msr vbar_el1, x0
+
+    /*
+     * Use only CPU core 0: ???
      */
     mrs x0, mpidr_el1
     and x0, x0, #MPIDR_EL1_CPU_ID_MASK
@@ -21,6 +58,7 @@ reset_handler:
     /*
      * Initialize stack pointer:
      */
+    // TODO: change this to allocate a separate stack for each CPU core
     adrp x0, _stack_end
     add x0, x0, #:lo12:_stack_end
     mov sp, x0
@@ -32,4 +70,3 @@ reset_handler:
     bl main
 
     b park_cpu
-

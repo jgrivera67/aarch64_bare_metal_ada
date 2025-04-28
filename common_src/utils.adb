@@ -7,22 +7,27 @@
 
 with System.Machine_Code;
 with System.Storage_Elements;
+with Interrupt_Handling; --  Needed to force this unit to be linked-in
 
 package body Utils is
    Last_Chance_Handler_Running : Boolean := False;
 
+   procedure Put_Char (C : Character) is
+   begin
+      Uart_Driver.Put_Char (C);
+      if C = ASCII.LF then
+         Uart_Driver.Put_Char (ASCII.CR);
+      end if;
+   end Put_Char;
+
    procedure Print_String (S : String; End_Line : Boolean := False) is
    begin
       for C of S loop
-         Uart_Driver.Put_Char (C);
-         if C = ASCII.LF then
-            Uart_Driver.Put_Char (ASCII.CR);
-         end if;
+         Put_Char (C);
       end loop;
 
       if End_Line then
-         Uart_Driver.Put_Char (ASCII.LF);
-         Uart_Driver.Put_Char (ASCII.CR);
+         Put_Char (ASCII.LF);
       end if;
    end Print_String;
 
@@ -186,7 +191,6 @@ package body Utils is
 
       Park_Cpu;
    end Last_Chance_Handler;
-
    function Get_CNTPCT return Interfaces.Unsigned_64 is
       CNTPCT_Value : Interfaces.Unsigned_64;
    begin
@@ -222,6 +226,17 @@ package body Utils is
                System.Storage_Elements.Integer_Address (
                   Reg_Value - Call_Instruction_Size_In_Bytes));
    end Get_Call_Address;
+
+   function Get_ELR_EL1 return Interfaces.Unsigned_64 is
+      ELR_EL1_Value : Interfaces.Unsigned_64;
+   begin
+      System.Machine_Code.Asm (
+         "mrs %0, elr_el1",
+         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", ELR_EL1_Value), --  %0
+         Volatile => True);
+
+      return ELR_EL1_Value;
+   end Get_ELR_EL1;
 
    procedure Wait_For_Interrupt is
    begin

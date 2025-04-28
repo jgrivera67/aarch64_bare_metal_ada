@@ -8,6 +8,7 @@ export ARMFVP_BIN_PATH=$ARMFVP_DIR/models/Linux64_GCC-9.3
 export GIT_EXTERNAL_DIFF=tkdiff
 
 alias v='gvim -U ide_env.vim'
+alias build_for_uart_boot='alr build -- -XUart_Boot=yes'
 
 function run_fvp {
    typeset elf_file
@@ -150,5 +151,33 @@ function my_uart {
    #picocom -b 115200 --send-cmd="lsx -vv --xmodem --binary" --receive-cmd="lrx -vv" $tty_port
    picocom -b 115200 --send-cmd="$HOME/my-projects/aarch64_bare_metal_ada/uart_boot_loader_client/bin/uart_boot_loader_client" $tty_port
 }
+
+function my_gdb
+{
+    typeset tty_name
+    typeset elf_file
+
+    if [ $# != 2 ]; then
+            echo "Usage: $FUNCNAME <tty name> <elf file>"
+            return 1
+    fi
+
+    tty_name=$1
+    elf_file=$2
+
+    arm-none-eabi-gdb -b 115200 \
+        --eval-command="target remote $tty_name" \
+        --eval-command="set output-radix 16" \
+        --eval-command="set print address on" \
+        --eval-command="set print array on" \
+        --eval-command="set print pretty on" \
+        --eval-command="set print union on" \
+        --eval-command="set history save on" \
+        --eval-command="set pagination off" \
+        $elf_file
+
+        #--eval-command="set debug remote 1" \
+}
+
 
 . ~/my-projects/third-party/alire/scripts/alr-completion.bash

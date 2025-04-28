@@ -24,6 +24,18 @@ park_cpu:
     adr x0, reset_handler
     cmp x0, #UART_BOOT_LOAD_ADDR
     bne 1f
+
+    /*
+     * Clear SCTLR_EL1:
+     *
+     * NOTE: Among other things, this ensures that the MMU is disabled, so that we
+     * can execute instructions where the UART boot loader is located.
+     */
+    msr sctlr_el1, xzr
+
+    /*
+     * Jump back to UART boot loader:
+     */
     mov x0, #KERNEL8_IMG_BOOT_ADDR
     br x0
 
