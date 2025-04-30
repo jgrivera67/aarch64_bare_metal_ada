@@ -6,25 +6,36 @@
 --
 abstract project Baremetal_Compiler_Flags is
 
+   type Board_Type is ("rpi4", "rpi5");
+
+   Board : Board_Type := External ("Board", "rpi4");
+
    type CPU_Core_Type is ("arm_cortex_a72", "arm_cortex_a76");
 
-   CPU_Core : CPU_Core_Type := External ("CPU_Core", "arm_cortex_a72");
+   CPU_Core := "";
+   case Board is
+      when "rpi4" =>
+         CPU_Core := "arm_cortex_a72";
+      when "rpi5" =>
+         CPU_Core := "arm_cortex_a76";
+      when others =>
+         null;
+   end case;
 
-   CPU_Arch := "";
-   Target_Compiler_Selector := "";
+   CPU_Arch := "armv8a_aarch64";
+   Target_Compiler_Selector := "aarch64-elf";
+   CPU_Arch_Switches := ("-march=armv8-a",
+                         "-mlittle-endian",
+                         "-mabi=lp64",
+                         "-I/opt/gcc-14.2.0-aarch64-elf/lib/gcc/aarch64-elf/14.2.0/include");
    CPU_Core_Switches := ();
    Build_Profile_Switches := ();
 
    case CPU_Core is
       when "arm_cortex_a72" =>
-              CPU_Arch := "armv8a_aarch64";
-              Target_Compiler_Selector := "aarch64-elf";
-              CPU_Core_Switches := ("-mcpu=cortex-a72+nosimd",
-                                    "-march=armv8-a",
-                                    "-mlittle-endian",
-                                    "-mabi=lp64",
-                                    "-I/opt/gcc-14.2.0-aarch64-elf/lib/gcc/aarch64-elf/14.2.0/include",
-                                    "-fno-omit-frame-pointer");
+         CPU_Core_Switches := ("-mcpu=cortex-a72+nosimd");
+      when "arm_cortex_a76" =>
+         CPU_Core_Switches := ("-mcpu=cortex-a76+nosimd");
       when others =>
               null;
    end case;
@@ -43,14 +54,16 @@ abstract project Baremetal_Compiler_Flags is
 
    package Compiler is
       --  COMMON_FLAGS here is common flags (used for C and Ada).
-      COMMON_FLAGS := CPU_Core_Switches &
-                  ("-fcallgraph-info=su,da",
-                   "-ffunction-sections",
-                   "-fdata-sections",
-                 --"-fverbose-asm",
-                   "-fstack-usage",
-                 --"-fstack-check", --  Generate stack checking code
-                   "-Wall");
+      COMMON_FLAGS := CPU_Arch_Switches &
+                      CPU_Core_Switches &
+                      ("-fcallgraph-info=su,da",
+                       "-ffunction-sections",
+                       "-fdata-sections",
+                     --"-fverbose-asm",
+                       "-fstack-usage",
+                     --"-fstack-check", --  Generate stack checking code
+                       "-fno-omit-frame-pointer",
+                       "-Wall");
 
       ADAFLAGS := COMMON_FLAGS &
                   ("-gnatwa" -- Enable all warnings

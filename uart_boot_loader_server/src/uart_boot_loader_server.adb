@@ -7,10 +7,11 @@
 
 with Uart_Driver;
 with Utils;
+with Uart_Boot_Loader_Common;
 with System.Storage_Elements;
 with System.Machine_Code;
 
-package body Uart_Boot_Loader is
+package body Uart_Boot_Loader_Server is
 
    procedure Load_Image_Over_Uart (Load_Address : System.Address) is
    begin
@@ -38,8 +39,9 @@ package body Uart_Boot_Loader is
       function Receive_Packet_Data (Load_Address : System.Address;
                                     Packet_Size : Interfaces.Unsigned_16)
                                     return Maybe_Checksum_Type is
-         Packet_Buffer : Utils.Byte_Array_Type (1 .. Positive (Packet_Size)) with
-                            Address => Load_Address;
+         Packet_Buffer :
+            Uart_Boot_Loader_Common.Byte_Array_Type (1 .. Positive (Packet_Size)) with
+               Address => Load_Address;
          Maybe_Received_Byte : Uart_Driver.Maybe_Byte_Type;
          Maybe_Checksum : Maybe_Checksum_Type;
       begin
@@ -53,7 +55,7 @@ package body Uart_Boot_Loader is
          end loop;
 
          Maybe_Checksum := (Valid => True,
-                            Checksum => Utils.Compute_Checksum (Packet_Buffer));
+                            Checksum => Uart_Boot_Loader_Common.Compute_Checksum (Packet_Buffer));
          return Maybe_Checksum;
       end Receive_Packet_Data;
 
@@ -170,4 +172,4 @@ package body Uart_Boot_Loader is
            Volatile => True);
    end Jump_To_Image_Reset_Handler;
 
-end Uart_Boot_Loader;
+end Uart_Boot_Loader_Server;

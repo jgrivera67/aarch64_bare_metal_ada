@@ -6,7 +6,7 @@ ENTRY(reset_handler);
 TOTAL_RAM = 1024M;
 BOOT_ADDRESS = 0x100000;
 STACK_SIZE = 8K;
-STACK_ALIGNMENT = 16;
+PAGE_ALIGNMENT = 4K;
 
 MEMORY
 {
@@ -17,6 +17,7 @@ SECTIONS
 {
  .text :
   {
+    . = ALIGN(PAGE_ALIGNMENT);
     *(.text.reset_handler)
     *(.text .text.*)
   } >RAM
@@ -41,6 +42,7 @@ SECTIONS
 
   .rodata :
   {
+    . = ALIGN(PAGE_ALIGNMENT);
     PROVIDE_HIDDEN (__rodata_start = .);
     *(.rodata .rodata.*)
     PROVIDE_HIDDEN (__rodata_end = .);
@@ -49,6 +51,7 @@ SECTIONS
 
   .data :  AT (__data_load)
   {
+    . = ALIGN(PAGE_ALIGNMENT);
     PROVIDE( __data_start = . );
     *(.data .data.*)
     PROVIDE( __data_end = . );
@@ -64,7 +67,7 @@ SECTIONS
 
   .stack (NOLOAD)  :
   {
-    . = ALIGN(STACK_ALIGNMENT);
+    . = ALIGN(PAGE_ALIGNMENT);
     _stack_start = .;
     . += STACK_SIZE;
     _stack_end = .;

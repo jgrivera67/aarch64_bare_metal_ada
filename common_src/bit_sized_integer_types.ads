@@ -8,7 +8,7 @@
 --
 --  Bit-sized unsigned integer types that don't have to byte-multiple sizes
 --
-package Bit_Sized_Integer_Types  with No_Elaboration_Code_All is
+package Bit_Sized_Integer_Types with No_Elaboration_Code_All is
    type Bit_Type is mod 2 ** 1
      with Size => 1;
 

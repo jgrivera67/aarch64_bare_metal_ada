@@ -13,10 +13,12 @@ with Ada.Sequential_IO;
 with Ada.Text_IO.Text_Streams;
 with Ada.Exceptions;
 with Interfaces;
-with Utils;
+with Uart_Boot_Loader_Common;
 
 package body Uart_Boot_Loader_Client is
    package Binary_IO is new Ada.Sequential_IO (Interfaces.Unsigned_8);
+
+   Debug_Server_On : constant Boolean := True; --???False;
 
    Packet_Size : constant := 1024;
 
@@ -24,7 +26,7 @@ package body Uart_Boot_Loader_Client is
       Packet_Start_Control_Char : Character := ASCII.STX;
       Packet_Number : Interfaces.Unsigned_8 := 1;
       Packet_Number_Negated : Interfaces.Unsigned_8 := not 1;
-      Data : Utils.Byte_Array_Type (1 .. Packet_Size);
+      Data : Uart_Boot_Loader_Common.Byte_Array_Type (1 .. Packet_Size);
       Checksum : Interfaces.Unsigned_32 := 0;
    end record;
 
@@ -125,7 +127,7 @@ package body Uart_Boot_Loader_Client is
             end loop;
          end if;
 
-         Packet.Checksum := Utils.Compute_Checksum (Packet.Data);
+         Packet.Checksum := Uart_Boot_Loader_Common.Compute_Checksum (Packet.Data);
 
          --  Transmit file data block:
          Packet_Retransmit_Count := 1;
@@ -159,7 +161,10 @@ package body Uart_Boot_Loader_Client is
             loop
                exit when Received_Char = ASCII.NAK;
                --  For printing debug messages received from the server:
-               --  Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Received_Char);
+               if Debug_Server_On then
+                  Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Received_Char);
+               end if;
+
                Received_Char := Receive_Control_Char;
             end loop;
 

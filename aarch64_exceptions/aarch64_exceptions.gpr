@@ -15,6 +15,7 @@ project Aarch64_Exceptions is
 
    for Source_Dirs use ("src/",
                         "../common_src/",
+                        "../common_src/" & Baremetal_Compiler_Flags.Board,
                         "config/");
    for Object_Dir use "obj/" & Aarch64_exceptions_Config.Build_Profile;
    for Create_Missing_Dirs use "True";

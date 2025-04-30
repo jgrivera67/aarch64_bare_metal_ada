@@ -6,17 +6,17 @@
 --
 
 with Utils;
-with Uart_Boot_Loader;
-with System;
+with Board;
+with Uart_Boot_Loader_Common;
+with Uart_Boot_Loader_Server;
 with GNAT.Source_Info;
 
 procedure App_Main is
-   Load_Address : constant System.Address := System'To_Address (16#0010_0000#);
 begin
    Utils.Print_String (
-      ASCII.LF & "Raspberry PI 4 UART boot loader (built on " &
+      ASCII.LF & Board.Board_Name & " UART boot loader server (built on " &
       GNAT.Source_Info.Compilation_Date &
       " at " & GNAT.Source_Info.Compilation_Time & ")" & ASCII.LF);
 
-   Uart_Boot_Loader.Load_Image_Over_Uart (Load_Address);
+   Uart_Boot_Loader_Server.Load_Image_Over_Uart (Uart_Boot_Loader_Common.Load_Address);
 end App_Main;

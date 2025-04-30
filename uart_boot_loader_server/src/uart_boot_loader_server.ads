@@ -7,7 +7,7 @@
 with System;
 with Interfaces;
 
-package Uart_Boot_Loader is
+package Uart_Boot_Loader_Server is
    procedure Load_Image_Over_Uart (Load_Address : System.Address);
 
 private
@@ -22,4 +22,4 @@ private
 
    procedure Jump_To_Image_Reset_Handler (Reset_Handler_Address : System.Address);
 
-end Uart_Boot_Loader;
+end Uart_Boot_Loader_Server;

@@ -1,12 +1,12 @@
-name = "uart_boot_loader"
-description = "UART boot loader"
+name = "uart_boot_loader_server"
+description = "UART boot loader server"
 version = "0.1.0-dev"
 
 authors = ["J. German Rivera"]
 maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
 maintainers-logins = ["jgrivera67"]
 
-executables = ["uart_boot_loader"]
+executables = ["uart_boot_loader_server"]
 
 [[depends-on]]
 gnat_aarch64_elf = "*"
@@ -20,4 +20,4 @@ CPU_Core = "arm_cortex_a72"
 [actions.'case(os)'.windows]
 [actions.'case(os)'.'...']
 type = "post-build"
-command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/uart_boot_loader.elf > bin/uart_boot_loader.lst; aarch64-elf-objcopy -O binary bin/uart_boot_loader.elf bin/uart_boot_loader.bin"]
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/uart_boot_loader_server.elf > bin/uart_boot_loader_server.lst; aarch64-elf-objcopy -O binary bin/uart_boot_loader_server.elf bin/uart_boot_loader_server.bin"]

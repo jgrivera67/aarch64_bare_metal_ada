@@ -9,11 +9,11 @@
 --  @summary UART driver for ARM PL011
 --
 with Bit_Sized_Integer_Types;
+private with Board;
 with Interfaces;
 with System;
 
-package Uart_Driver with SPARK_Mode => Off
-is
+package Uart_Driver is
    procedure Put_Char (C : Character);
 
    procedure Send_Byte (Byte : Interfaces.Unsigned_8);
@@ -30,7 +30,6 @@ is
    function Receive_Byte_If_Any return Maybe_Byte_Type;
 
 private
-   UART0_Base : constant System.Address := System'To_Address (16#fe20_1000#);
 
    --  Data Register.
    type UARTDR_Register is record
@@ -476,6 +475,6 @@ private
    --  UART peripheral instances
    --
    UART0_Periph : UART_Peripheral
-   with Import, Address => UART0_Base;
+   with Import, Address => Board.UART0_Base;
 
 end Uart_Driver;

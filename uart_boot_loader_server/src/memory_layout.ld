@@ -1,23 +1,27 @@
 /**
- * Linker script to create image to boot as kernel8.img from an SD card
+ * Linker script for the UART boot loader server.
+ *
+ * NOTE: The boot loader image itself is assumed to be booted as a kernel8.img
+ * from an SD card, so it will be loaded at address 0x80000.
+ * The target boot image will be loaded at address 0x100000. So, the boot loader
+ * can only use RAM below this address for its own code and internal data.
  */
 ENTRY(reset_handler);
 
-TOTAL_RAM = 1024M;
+BOOTLOADER_RAM_SIZE = 512K;
 BOOT_ADDRESS = 0x80000;
-STACK_SIZE = 8K;
-PAGE_ALIGNMENT = 4K;
+STACK_RAM_SIZE = 8K;
+STACK_ALIGNMENT = 16;
 
 MEMORY
 {
-  RAM(rwx) : ORIGIN =  BOOT_ADDRESS, LENGTH = TOTAL_RAM - BOOT_ADDRESS
+  RAM(rwx) : ORIGIN = BOOT_ADDRESS, LENGTH = BOOTLOADER_RAM_SIZE
 }
 
 SECTIONS
 {
  .text :
   {
-    . = ALIGN(PAGE_ALIGNMENT);
     *(.text.reset_handler)
     *(.text .text.*)
   } >RAM
@@ -42,7 +46,6 @@ SECTIONS
 
   .rodata :
   {
-    . = ALIGN(PAGE_ALIGNMENT);
     PROVIDE_HIDDEN (__rodata_start = .);
     *(.rodata .rodata.*)
     PROVIDE_HIDDEN (__rodata_end = .);
@@ -51,7 +54,6 @@ SECTIONS
 
   .data :  AT (__data_load)
   {
-    . = ALIGN(PAGE_ALIGNMENT);
     PROVIDE( __data_start = . );
     *(.data .data.*)
     PROVIDE( __data_end = . );
@@ -67,9 +69,9 @@ SECTIONS
 
   .stack (NOLOAD)  :
   {
-    . = ALIGN(PAGE_ALIGNMENT);
+    . = ALIGN(STACK_ALIGNMENT);
     _stack_start = .;
-    . += STACK_SIZE;
+    . += STACK_RAM_SIZE;
     _stack_end = .;
   } >RAM
 }

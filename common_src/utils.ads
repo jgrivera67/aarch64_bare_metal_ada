@@ -4,9 +4,9 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
+with Uart_Driver;
 with System;
 with Interfaces;
-with Uart_Driver;
 
 package Utils is
    use type Interfaces.Unsigned_64;
@@ -16,8 +16,6 @@ package Utils is
    Cache_Line_Size_In_Bytes : constant := 64;
 
    Page_Size_In_Bytes : constant := 4_096;
-
-   type Byte_Array_Type is array (Positive range <>) of Interfaces.Unsigned_8;
 
    procedure Put_Char (C : Character);
 
@@ -33,9 +31,6 @@ package Utils is
       return Uart_Driver.Maybe_Byte_Type;
 
    function Get_Char return Character renames Uart_Driver.Get_Char;
-
-   function Compute_Checksum (Bytes_Array : Byte_Array_Type)
-      return Interfaces.Unsigned_32;
 
    function Get_Code_Location_Here return System.Address
       with Inline_Always;
@@ -58,15 +53,6 @@ private
           Export,
           Convention => C,
           External_Name => "__gnat_last_chance_handler";
-
-   function Get_CNTPCT return Interfaces.Unsigned_64
-      with Inline_Always;
-
-   function Get_CNTFRQ return Interfaces.Unsigned_64
-      with Inline_Always;
-
-   function Get_Timer_Timestamp_Usec return Interfaces.Unsigned_64 is
-      (Get_CNTPCT / (Get_CNTFRQ / 1_000_000));
 
    function Get_Call_Address return System.Address with
       Inline_Always => False, Suppress => All_Checks;

@@ -5,9 +5,10 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
+with Board;
+with Utils;
 with Interfaces;
 with System.Storage_Elements;
-with Utils;
 with GNAT.Source_Info;
 
 procedure App_Main is
@@ -40,7 +41,7 @@ procedure App_Main is
 
 begin
    Utils.Print_String (
-      LF & "Raspberry PI 4 AArch64 Exceptions (built on " &
+      LF & Board.Board_Name & " AArch64 Exceptions (built on " &
       GNAT.Source_Info.Compilation_Date &
       " at " & GNAT.Source_Info.Compilation_Time &
       ") from address ");
