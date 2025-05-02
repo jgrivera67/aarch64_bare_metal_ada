@@ -1,0 +1,27 @@
+name = "uart_boot_loader_server"
+description = "UART boot loader server"
+version = "0.1.0-dev"
+
+authors = ["J. German Rivera"]
+maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
+maintainers-logins = ["jgrivera67"]
+
+executables = ["uart_boot_loader_server"]
+
+[[depends-on]]
+aarch64_baremetal_ada = "*"
+gnat_aarch64_elf = "*"
+gnatprove = "*"
+gprbuild = "*" # needed by alire-index CI builds
+
+[[pins]]
+aarch64_baremetal_ada = { path='../..' }
+
+[build-profiles]
+aarch64_baremetal_ada = "development"
+
+[[actions]]
+[actions.'case(os)'.windows]
+[actions.'case(os)'.'...']
+type = "post-build"
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/uart_boot_loader_server.elf > bin/uart_boot_loader_server.lst; aarch64-elf-objcopy -O binary bin/uart_boot_loader_server.elf bin/uart_boot_loader_server.bin"]

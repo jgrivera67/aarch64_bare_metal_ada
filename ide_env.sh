@@ -149,7 +149,7 @@ function my_uart {
    tty_port=$1
 
    #picocom -b 115200 --send-cmd="lsx -vv --xmodem --binary" --receive-cmd="lrx -vv" $tty_port
-   picocom -b 115200 --send-cmd="$HOME/my-projects/aarch64_bare_metal_ada/uart_boot_loader_client/bin/uart_boot_loader_client" $tty_port
+   picocom -b 115200 --send-cmd="$HOME/my-projects/aarch64_bare_metal_ada/host_apps/uart_boot_loader_client/bin/uart_boot_loader_client" $tty_port
 }
 
 function my_gdb

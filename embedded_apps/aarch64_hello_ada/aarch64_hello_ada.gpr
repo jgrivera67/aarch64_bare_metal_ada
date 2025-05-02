@@ -1,0 +1,70 @@
+--
+--  Copyright (c) 2022-2025, German Rivera
+--
+--
+--  SPDX-License-Identifier: Apache-2.0
+--
+with "config/aarch64_hello_ada_config.gpr";
+with "../../aarch64_baremetal_ada_compiler_flags.gpr";
+with "../../third_party/portable_minimal_ada_rts/portable_minimal_ada_rts.gpr";
+
+project Aarch64_Hello_Ada is
+   for Target use Aarch64_Baremetal_Ada_Compiler_Flags.Target_Compiler_Selector;
+   for Runtime ("Ada") use Portable_Minimal_Ada_Rts'Runtime ("Ada");
+   for Languages use ("Ada");
+
+   for Source_Dirs use ("src/",
+                        "config/");
+   for Object_Dir use "obj/" & Aarch64_Hello_Ada_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("app_main.adb");
+
+   Executable_Prefix := "aarch64_hello_ada";
+
+   package Compiler is
+      for Default_Switches ("Ada") use Aarch64_Hello_Ada_Config.Ada_Compiler_Switches &
+                                       Aarch64_Baremetal_Ada_Compiler_Flags.Compiler.ADAFLAGS;
+   end Compiler;
+
+   package Linker is
+      for Default_Switches ("Ada") use
+         Aarch64_Baremetal_Ada_Compiler_Flags.Compiler.COMMON_FLAGS &
+         ("-nostartfiles",
+          "-nostdlib",
+          "-lgcc", -- needed for __aeabi_uldivmod
+          "-Wl,-Map=" & "../../bin/" & Executable_Prefix & ".map",
+	       "-Xlinker", "--gc-sections",
+	       "-T" & Aarch64_Baremetal_Ada_Compiler_Flags.Linker_Script_Path);
+   end Linker;
+
+   package Builder is
+      for Executable ("app_main.adb") use Executable_Prefix;
+      for Executable_Suffix use ".elf";
+   end Builder;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-l");
+   end Binder;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+   package Prove is
+      for Proof_Switches ("Ada") use ("--proof=per_path",
+                                      --"--verbose",
+                                      --"--no-subprojects",
+                                      "-j0",
+                                      "--no-global-generation",
+                                      "--no-inlining",
+                                      "--no-loop-unrolling",
+                                      "--level=1",
+                                      --"--prover=z3,cvc5,altergo",
+                                      "--timeout=60",
+                                      "--memlimit=0",
+                                      "--steps=200000",
+                                      "--assumptions",
+                                      "--report=statistics");
+   end Prove;
+end Aarch64_Hello_Ada;

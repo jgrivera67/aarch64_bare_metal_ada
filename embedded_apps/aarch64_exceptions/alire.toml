@@ -1,0 +1,27 @@
+name = "aarch64_exceptions"
+description = "AArch64 Exceptions test program"
+version = "0.1.0-dev"
+
+authors = ["J. German Rivera"]
+maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
+maintainers-logins = ["jgrivera67"]
+
+executables = ["aarch64_exceptions"]
+
+[[depends-on]]
+aarch64_baremetal_ada = "*"
+gnat_aarch64_elf = "*"
+gnatprove = "*"
+gprbuild = "*" # needed by alire-index CI builds
+
+[[pins]]
+aarch64_baremetal_ada = { path='../..' }
+
+[build-profiles]
+aarch64_baremetal_ada = "development"
+
+[[actions]]
+[actions.'case(os)'.windows]
+[actions.'case(os)'.'...']
+type = "post-build"
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/aarch64_exceptions.elf > bin/aarch64_exceptions.lst; aarch64-elf-objcopy -O binary bin/aarch64_exceptions.elf bin/aarch64_exceptions.bin"]

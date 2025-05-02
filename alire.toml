@@ -16,25 +16,19 @@ tags = ["aarch64"]
 authors = ["J. German Rivera"]
 maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
 maintainers-logins = ["jgrivera67"]
-auto-gpr-with=false
-project-files = [
-   "aarch64_hello_ada/aarch64_hello_ada.gpr",
-   "uart_boot_loader/uart_boot_loader.gpr",
-   "uart_boot_loader_client/uart_boot_loader_client.gpr"
-]
+
+[[actions]]
+type = "test"
+command = ["alr", "build", "--" ,"-XBoard=rpi5", "-XUart_Boot=yes"]
+directory = "embedded_apps/aarch64_hello_ada"
+
+[[actions]]
+type = "test"
+command = ["alr", "build", "--" ,"-XBoard=rpi5", "-XUart_Boot=no"]
+directory = "embedded_apps/uart_boot_loader_server"
 
 [[actions]]
 type = "test"
 command = ["alr", "build"]
-directory = "aarch64_hello_ada"
-
-[[actions]]
-type = "test"
-command = ["alr", "build"]
-directory = "uart_boot_loader"
-
-[[actions]]
-type = "test"
-command = ["alr", "build"]
-directory = "uart_boot_loader_client"
+directory = "host_apps/uart_boot_loader_client"
 

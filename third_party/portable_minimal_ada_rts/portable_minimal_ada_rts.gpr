@@ -1,8 +1,8 @@
-with "../../baremetal_compiler_flags.gpr";
+with "../../aarch64_baremetal_ada_compiler_flags.gpr";
 
 project Portable_Minimal_Ada_Rts is
 
-   for Target use Baremetal_Compiler_Flags.Target_Compiler_Selector;
+   for Target use Aarch64_Baremetal_Ada_Compiler_Flags.Target_Compiler_Selector;
    for Runtime ("Ada") use  Project'Project_Dir;
    for Languages use ("Ada");
 
@@ -27,7 +27,7 @@ project Portable_Minimal_Ada_Rts is
           "-nostdinc",  -- Inhibit the search of the default location for the GNAT Run Time Library (RTL) source files.
           "-nostdlib")  -- Inhibit the search of the default location for the GNAT Run Time Library (RTL) ALI files.
          &
-         Baremetal_Compiler_Flags.Compiler.ADAFLAGS;
+         Aarch64_Baremetal_Ada_Compiler_Flags.Compiler.ADAFLAGS;
    end Compiler;
 
    package Install is

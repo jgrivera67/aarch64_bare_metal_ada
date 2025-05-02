@@ -1,0 +1,121 @@
+--
+--  Copyright (c) 2025, German Rivera
+--
+--
+--  SPDX-License-Identifier: Apache-2.0
+--
+abstract project Aarch64_Baremetal_Ada_Compiler_Flags is
+
+   type Board_Type is ("rpi4", "rpi5");
+
+   Board : Board_Type := External ("Board", "");
+
+   type CPU_Core_Type is ("arm_cortex_a72", "arm_cortex_a76");
+
+   CPU_Core := "";
+   case Board is
+      when "rpi4" =>
+         CPU_Core := "arm_cortex_a72";
+      when "rpi5" =>
+         CPU_Core := "arm_cortex_a76";
+      when others =>
+         null;
+   end case;
+
+   CPU_Arch := "armv8a_aarch64";
+   Target_Compiler_Selector := "aarch64-elf";
+   CPU_Arch_Switches := ("-march=armv8-a",
+                         "-mlittle-endian",
+                         "-mabi=lp64",
+                         "-I/opt/gcc-14.2.0-aarch64-elf/lib/gcc/aarch64-elf/14.2.0/include");
+   CPU_Core_Switches := ();
+   Build_Profile_Switches := ();
+
+   case CPU_Core is
+      when "arm_cortex_a72" =>
+         CPU_Core_Switches := ("-mcpu=cortex-a72+nosimd");
+      when "arm_cortex_a76" =>
+         CPU_Core_Switches := ("-mcpu=cortex-a76+nosimd");
+      when others =>
+         null;
+   end case;
+
+   type Uart_Boot_Type is ("no", "yes");
+
+   Uart_Boot : Uart_Boot_Type := External ("Uart_Boot", "");
+
+   Linker_Script_Path := "";
+   case Uart_Boot is
+      when "yes" =>
+         Linker_Script_Path := "../../../uart_boot_memory_layout.ld";
+      when "no" =>
+         Linker_Script_Path := "../../../kernel8_img_memory_layout.ld";
+      when others =>
+         null;
+   end case;
+
+   package Compiler is
+      --  COMMON_FLAGS here is common flags (used for C and Ada).
+      COMMON_FLAGS := CPU_Arch_Switches &
+                      CPU_Core_Switches &
+                      ("-fcallgraph-info=su,da",
+                       "-ffunction-sections",
+                       "-fdata-sections",
+                     --"-fverbose-asm",
+                       "-fstack-usage",
+                     --"-fstack-check", --  Generate stack checking code
+                       "-fno-omit-frame-pointer",
+                       "-Wall");
+
+      ADAFLAGS := COMMON_FLAGS &
+                  ("-gnatwa" -- Enable all warnings
+                  ,"-gnatw.X" -- Disable warnings for No_Exception_Propagation
+                  ,"-gnatVa" -- All validity checks
+                --,"-gnateA" -- Adds checks that parameters are not aliased
+                --,"-gnateV" -- Adds checks that parameters are valid, including parameters of composite types
+                  ,"-gnaty3" -- Specify indentation level of 3
+                  ,"-gnatya" -- Check attribute casing
+                  ,"-gnatyA" -- Use of array index numbers in array attributes
+                  ,"-gnatyB" -- Check Boolean operators
+                  ,"-gnatyb" -- Blanks not allowed at statement end
+                  ,"-gnatyc" -- Check comments
+                  ,"-gnaty-d" -- Disable check no DOS line terminators present
+                  ,"-gnatye" -- Check end/exit labels
+                  ,"-gnatyf" -- No form feeds or vertical tabs
+                  ,"-gnatyh" -- No horizontal tabs
+                  ,"-gnatyi" -- Check if-then layout
+                  ,"-gnatyI" -- check mode IN keywords
+                  ,"-gnatyk" -- Check keyword casing
+                  ,"-gnatyl" -- Check layout
+                  ,"-gnatyn" -- Check casing of entities in Standard
+                  ,"-gnatyO" -- Check that overriding subprograms are explicitly marked as such
+                  ,"-gnatyp" -- Check pragma casing
+                  ,"-gnatyr" -- Check identifier references casing
+                  ,"-gnatyS" -- Check no statements after THEN/ELSE
+                  ,"-gnatyt" -- Check token spacing
+                  ,"-gnatyu" -- Check unnecessary blank lines
+                  ,"-gnatyx" -- Check extra parentheses
+                --,"-gnatQ" --  Don't quit. Generate ALI and tree files even if illegalities
+                  ,"-gnato13"   --  Overflow checking            (part of Ada)
+                  ,"-gnatf"     --  Full, verbose error messages
+                  ,"-gnatyM120" --  Check maximum line length
+                  ,"-gnatef"    --  Print full path in error messages
+                  ,"-gnata"     --  Enable assertions and contracts
+               --??? ,"-gnatwe"    --  Warnings as errors
+                  ,"-gnat2022"  --  Use Ada 2022
+                  ,"-nostdinc"  --  Inhibit the search of the default location for the GNAT Run Time Library (RTL) source files.
+                  ,"-nostdlib"  --  Inhibit the search of the default location for the GNAT Run Time Library (RTL) ALI files.
+                  ,"-gdwarf-4"  --  To generate correct source-line info
+                  );
+
+      Development_Only_Flags := ("-Og", -- No optimization
+                                 "-g"); -- Debug info
+
+      Release_Only_Flags := ("-O3",     -- Optimize for performance
+                             "-gnatn",  -- Enable inlining
+                             "-gnatp"); -- Suppress all runtime checks
+
+      for Local_Configuration_Pragmas use "gnat_pragmas.adc";
+   end Compiler;
+
+end Aarch64_Baremetal_Ada_Compiler_Flags;
