@@ -82,7 +82,15 @@ SECTIONS
     __stacks_end = .;
   } >RAM
 
-  __mmu_translation_tables_start = __stacks_end;
+  .mmu_translation_tables (NOLOAD)  :
+  {
+    . = ALIGN(PAGE_ALIGNMENT);
+    __mmu_translation_tables_start = .;
+    *(.mmu_translation_tables)
+    . = ALIGN(PAGE_ALIGNMENT);
+    __mmu_translation_tables_end = .;
+  } >RAM
+
 }
 
 ASSERT(__data_start == __data_load, "__data_start and __data_load must match");

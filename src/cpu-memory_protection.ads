@@ -10,7 +10,6 @@
 --
 
 private with CPU.Multicore;
-private with Linker_Memory_Map;
 with Interfaces;
 
 package CPU.Memory_Protection
@@ -193,197 +192,6 @@ private
              Normal_Memory_Subkind => Normal_Memory_Inner_Write_Back),
         others => <>];
 
-   -----------------------------------------------------------------------------
-   --  SCTLR_EL1 register declarations
-   -----------------------------------------------------------------------------
-
-   type MMU_Enable_Type is
-      (MMU_Disabled,
-       MMU_Enabled)
-   with Size => 1;
-
-   for MMU_Enable_Type use
-     (MMU_Disabled => 2#0#,
-      MMU_Enabled => 2#1#);
-
-   type Alignment_Check_Enable_Type is (Alignment_Check_Disabled,
-                                        Alignment_Check_Enabled)
-   with Size => 1;
-
-   for Alignment_Check_Enable_Type use
-     (Alignment_Check_Disabled => 2#0#,
-      Alignment_Check_Enabled => 2#1#);
-
-   type Cacheability_Control_Type is (Non_Cacheable,
-                                      Cacheable)
-   with Size => 1;
-
-   for Cacheability_Control_Type use
-     (Non_Cacheable => 2#0#,
-      Cacheable => 2#1#);
-
-   type SP_EL1_Alignment_Check_Enable_Type is (SP_EL1_Alignment_Check_Disabled,
-                                               SP_EL1_Alignment_Check_Enabled)
-   with Size => 1;
-
-   for SP_EL1_Alignment_Check_Enable_Type use
-     (SP_EL1_Alignment_Check_Disabled => 2#0#,
-      SP_EL1_Alignment_Check_Enabled => 2#1#);
-
-   type SP_EL0_Alignment_Check_Enable_Type is (SP_EL0_Alignment_Check_Disabled,
-                                               SP_EL0_Alignment_Check_Enabled)
-   with Size => 1;
-
-   for SP_EL0_Alignment_Check_Enable_Type use
-     (SP_EL0_Alignment_Check_Disabled => 2#0#,
-      SP_EL0_Alignment_Check_Enabled => 2#1#);
-
-   type User_Mask_Access_Enable_Type is (User_Mask_Access_Disabled,
-                                         User_Mask_Access_Enabled)
-   with Size => 1;
-
-   for User_Mask_Access_Enable_Type use
-     (User_Mask_Access_Disabled => 2#0#,
-      User_Mask_Access_Enabled => 2#1#);
-
-   type Instruction_Access_Cacheability_Control_Type is (
-      Instruction_Access_Non_Cacheable,
-      Instruction_Access_Cacheable)
-   with Size => 1;
-
-   for Instruction_Access_Cacheability_Control_Type use
-     (Instruction_Access_Non_Cacheable => 2#0#,
-      Instruction_Access_Cacheable => 2#1#);
-
-   type EL0_WFI_Trap_Disable_Type is (EL0_WFI_Trap_Enabled,
-                                      EL0_WFI_Trap_Disabled)
-   with Size => 1;
-
-   for EL0_WFI_Trap_Disable_Type use
-     (EL0_WFI_Trap_Enabled => 2#0#,
-      EL0_WFI_Trap_Disabled => 2#1#);
-
-   type EL0_WFE_Trap_Disable_Type is (EL0_WFE_Trap_Enabled,
-                                      EL0_WFE_Trap_Disabled)
-   with Size => 1;
-
-   for EL0_WFE_Trap_Disable_Type use
-     (EL0_WFE_Trap_Enabled => 2#0#,
-      EL0_WFE_Trap_Disabled => 2#1#);
-
-   type Write_Permission_Implies_XN_Enable_Type is
-      (Write_Permission_Implies_XN_Disabled,
-       Write_Permission_Implies_XN_Enabled)
-   with Size => 1;
-
-   for Write_Permission_Implies_XN_Enable_Type use
-     (Write_Permission_Implies_XN_Disabled => 2#0#,
-      Write_Permission_Implies_XN_Enabled => 2#1#);
-
-   type EL1_Endianness_Type is
-      (EL1_Is_Little_Endian,
-       EL1_Is_Big_Endian)
-   with Size => 1;
-
-   for EL1_Endianness_Type use
-     (EL1_Is_Little_Endian => 2#0#,
-      EL1_Is_Big_Endian => 2#1#);
-
-   type EL0_Endianness_Type is
-      (EL0_Is_Little_Endian,
-       EL0_Is_Big_Endian)
-   with Size => 1;
-
-   for EL0_Endianness_Type use
-     (EL0_Is_Little_Endian => 2#0#,
-      EL0_Is_Big_Endian => 2#1#);
-
-   type APDBKey_EL1_Pointer_Authentication_Enable_Type is
-      (APDBKey_EL1_Pointer_Authentication_Disabled,
-       APDBKey_EL1_Pointer_Authentication_Enabled)
-   with Size => 1;
-
-   for APDBKey_EL1_Pointer_Authentication_Enable_Type use
-     (APDBKey_EL1_Pointer_Authentication_Disabled => 2#0#,
-      APDBKey_EL1_Pointer_Authentication_Enabled => 2#1#);
-
-   type APDAKey_EL1_Pointer_Authentication_Enable_Type is
-      (APDAKey_EL1_Pointer_Authentication_Disabled,
-       APDAKey_EL1_Pointer_Authentication_Enabled)
-   with Size => 1;
-
-   for APDAKey_EL1_Pointer_Authentication_Enable_Type use
-     (APDAKey_EL1_Pointer_Authentication_Disabled => 2#0#,
-      APDAKey_EL1_Pointer_Authentication_Enabled => 2#1#);
-
-   type APIBKey_EL1_Pointer_Authentication_Enable_Type is
-      (APIBKey_EL1_Pointer_Authentication_Disabled,
-       APIBKey_EL1_Pointer_Authentication_Enabled)
-   with Size => 1;
-
-   for APIBKey_EL1_Pointer_Authentication_Enable_Type use
-     (APIBKey_EL1_Pointer_Authentication_Disabled => 2#0#,
-      APIBKey_EL1_Pointer_Authentication_Enabled => 2#1#);
-
-   type APIAKey_EL1_Pointer_Authentication_Enable_Type is
-      (APIAKey_EL1_Pointer_Authentication_Disabled,
-       APIAKey_EL1_Pointer_Authentication_Enabled)
-   with Size => 1;
-
-   for APIAKey_EL1_Pointer_Authentication_Enable_Type use
-     (APIAKey_EL1_Pointer_Authentication_Disabled => 2#0#,
-      APIAKey_EL1_Pointer_Authentication_Enabled => 2#1#);
-
-   --
-   --  System control register for EL1
-   --
-   --  NOTE: We don't need to declare this register with Volatile_Full_Access,
-   --  as it is not memory-mapped. It is accessed via MRS/MSR instructions.
-   --
-   type SCTLR_EL1_Type is record
-      M : MMU_Enable_Type := MMU_Disabled;
-      A : Alignment_Check_Enable_Type := Alignment_Check_Disabled;
-      C : Cacheability_Control_Type := Non_Cacheable;
-      SA : SP_EL1_Alignment_Check_Enable_Type := SP_EL1_Alignment_Check_Disabled;
-      SA0 : SP_EL0_Alignment_Check_Enable_Type := SP_EL0_Alignment_Check_Disabled;
-      UMA : User_Mask_Access_Enable_Type := User_Mask_Access_Disabled;
-      I : Instruction_Access_Cacheability_Control_Type := Instruction_Access_Non_Cacheable;
-      EnDB : APDBKey_EL1_Pointer_Authentication_Enable_Type := APDBKey_EL1_Pointer_Authentication_Disabled;
-      nTWI : EL0_WFI_Trap_Disable_Type := EL0_WFI_Trap_Enabled;
-      nTWE : EL0_WFE_Trap_Disable_Type := EL0_WFE_Trap_Enabled;
-      WXN : Write_Permission_Implies_XN_Enable_Type := Write_Permission_Implies_XN_Disabled;
-      E0E : EL0_Endianness_Type := EL0_Is_Little_Endian;
-      EE : EL1_Endianness_Type := EL1_Is_Little_Endian;
-      EnDA : APDAKey_EL1_Pointer_Authentication_Enable_Type := APDAKey_EL1_Pointer_Authentication_Disabled;
-      EnIB : APIBKey_EL1_Pointer_Authentication_Enable_Type := APIBKey_EL1_Pointer_Authentication_Disabled;
-      EnIA : APIAKey_EL1_Pointer_Authentication_Enable_Type := APIAKey_EL1_Pointer_Authentication_Disabled;
-   end record
-   with Size => 64,
-        Bit_Order => System.Low_Order_First;
-
-   for SCTLR_EL1_Type use record
-      M at 0 range 0 .. 0;
-      A at 0 range 1 .. 1;
-      C at 0 range 2 .. 2;
-      SA at 0 range 3 .. 3;
-      SA0 at 0 range 4 .. 4;
-      UMA at 0 range 9 .. 9;
-      I at 0 range 12 .. 12;
-      EnDB at 0 range 13 .. 13;
-      nTWI at 0 range 16 .. 16;
-      nTWE at 0 range 18 .. 18;
-      WXN at 0 range 19 .. 19;
-      E0E at 0 range 24 .. 24;
-      EE at 0 range 25 .. 25;
-      EnDA at 0 range 27 .. 27;
-      EnIB at 0 range 30 .. 30;
-      EnIA at 0 range 31 .. 31;
-   end record;
-
-   function Get_SCTLR_EL1 return SCTLR_EL1_Type;
-
-   procedure Set_SCTLR_EL1 (SCTLR_EL1_Value : SCTLR_EL1_Type);
-
    function Mmu_Is_Enabled return Boolean is
       (Get_SCTLR_EL1.M = MMU_Enabled);
 
@@ -467,7 +275,7 @@ private
             AP : Access_Permissions_Attribute_Type := EL1_Read_Write_EL0_No_Access;
             SH : Sharability_Attribute_Type := Non_Shareable;
             AF : Boolean := False; --  Access Flag to mark the entry as hardware-managed
-            Physical_Page_Address_Prefix : Page_Address_Prefix_Type := 0;
+            Page_Address_Prefix : Page_Address_Prefix_Type := 0;
             PXN : Execute_Never_Type := Non_Executable; --  Privileged Execute Never
             UXN : Execute_Never_Type := Non_Executable; --  Unprivileged Execute Never
       end case;
@@ -475,6 +283,8 @@ private
    with Size => 64,
         Bit_Order => System.Low_Order_First,
         Unchecked_Union;
+
+   Page_Address_Prefix_Lowest_Bit_Index : constant := 12;
 
    for Translation_Table_Entry_Type use record
       Value       at 0 range 0 .. 63;
@@ -485,19 +295,10 @@ private
       AP          at 0 range 6 .. 7;
       SH          at 0 range 8 .. 9;
       AF          at 0 range 10 .. 10;
-      Physical_Page_Address_Prefix at 0 range 12 .. 51;
+      Page_Address_Prefix at 0 range Page_Address_Prefix_Lowest_Bit_Index .. 51;
       PXN         at 0 range 53 .. 53;
       UXN         at 0 range 54 .. 54;
    end record;
-
-   function Address_To_Page_Address_Prefix (Addr : System.Address)
-      return Page_Address_Prefix_Type is
-      (Page_Address_Prefix_Type (
-         To_Integer (Addr) / Page_Size_In_Bytes));
-
-   function Page_Address_Prefix_To_Address (Page_Address_Prefix : Page_Address_Prefix_Type)
-      return System.Address is
-      (To_Address (Integer_Address (Page_Address_Prefix) * Page_Size_In_Bytes));
 
    -----------------------------------------------------------------------------
    --  TCR - Translation Control Register
@@ -562,6 +363,19 @@ private
        TG1_4KB => 2#10#,
        TG1_64KB => 2#11#);
 
+   type Translation_Table_Cacheability_Type is
+      (TT_Normal_Memory_Non_Cacheable,
+       TT_Normal_Memory_Write_Back_Read_Allocate_Write_Allocate_Cacheable,
+       TT_Normal_Memory_Write_Through_Read_Allocate_No_Write_Allocate_Cacheable,
+       TT_Normal_Memory_Write_Back_Read_Allocate_No_Write_Allocate_Cacheable)
+      with Size => 2;
+
+   for Translation_Table_Cacheability_Type use
+      (TT_Normal_Memory_Non_Cacheable => 2#00#,
+       TT_Normal_Memory_Write_Back_Read_Allocate_Write_Allocate_Cacheable => 2#01#,
+       TT_Normal_Memory_Write_Through_Read_Allocate_No_Write_Allocate_Cacheable => 2#10#,
+       TT_Normal_Memory_Write_Back_Read_Allocate_No_Write_Allocate_Cacheable => 2#11#);
+
    --
    --  Translation Control Register for ELx
    --  - T0SZ, SH0, TG0: controls the translation regime for the translation
@@ -580,10 +394,14 @@ private
             Value : Interfaces.Unsigned_64 := 0;
          when False =>
             T0SZ : TnSZ_Type := 0;
+            IRGN0 : Translation_Table_Cacheability_Type := TT_Normal_Memory_Non_Cacheable;
+            ORGN0 : Translation_Table_Cacheability_Type := TT_Normal_Memory_Non_Cacheable;
             SH0 : Sharability_Attribute_Type := Non_Shareable;
             TG0 : TG0_Type := TG0_4KB;
             T1SZ : TnSZ_Type := 0;
             EPD1 : EPD1_Type := TTBR1_Translation_Table_Walk_Enabled;
+            IRGN1 : Translation_Table_Cacheability_Type := TT_Normal_Memory_Non_Cacheable;
+            ORGN1 : Translation_Table_Cacheability_Type := TT_Normal_Memory_Non_Cacheable;
             SH1 : Sharability_Attribute_Type := Non_Shareable;
             TG1 : TG1_Type := TG1_4KB;
       end case;
@@ -595,10 +413,14 @@ private
    for TCR_Type use record
       Value at 0 range 0 .. 63;
       T0SZ at 0 range 0 .. 5;
+      IRGN0 at 0 range 8 .. 9;
+      ORGN0 at 0 range 10 .. 11;
       SH0  at 0 range 12 .. 13;
       TG0  at 0 range 14 .. 15;
       T1SZ at 0 range 16 .. 21;
       EPD1 at 0 range 23 .. 23;
+      IRGN1 at 0 range 24 .. 25;
+      ORGN1 at 0 range 26 .. 27;
       SH1  at 0 range 28 .. 29;
       TG1  at 0 range 30 .. 31;
    end record;
@@ -612,18 +434,23 @@ private
    --
    --  NOTE: The size of the virtual address range is `2 ** (64 - TnSZ)`.
    --
-   Virtual_Address_Space_Size_TnSZ_Value : constant TnSZ_Type := 27;
+   Virtual_Address_Space_Size_TnSZ_Value : constant TnSZ_Type := 25;
 
    Virtual_Address_Space_Size_In_Bytes : constant Integer_Address :=
-      2 ** (64 - Natural (Virtual_Address_Space_Size_TnSZ_Value)); --  128 GiB
+      2 ** (64 - Natural (Virtual_Address_Space_Size_TnSZ_Value)); --  512 GiB
 
    pragma Compile_Time_Error
-     (Virtual_Address_Space_Size_In_Bytes /= 128 * 1024 * 1024 * 1024,
+     (Virtual_Address_Space_Size_In_Bytes /= 512 * 1024 * 1024 * 1024,
       "Virtual_Address_Space_Size_In_Bytes has the wrong value");
 
-   TTBR0_Granule : constant TG0_Type := TG0_4KB;
+   type Translation_Table_Level_Type is (TT_Level1,
+                                         TT_Level2,
+                                         TT_Level3);
 
-   type Translation_Table_Level_Type is (TT_Level1, TT_Level2, TT_Level3);
+   for Translation_Table_Level_Type use
+      (TT_Level1 => 1,
+       TT_Level2 => 2,
+       TT_Level3 => 3);
 
    TTBR0_Granule_To_Entry_Range_Size_Map :
       constant array (TG0_Type, Translation_Table_Level_Type) of Integer_Address :=
@@ -648,6 +475,17 @@ private
          TG1_64KB => [TT_Level1 => 4 * 1024 * 1024 * 1024 * 1024, -- 4TB
                      TT_Level2 => 512 * 1024 * 1024, -- 512MB
                      TT_Level3 => 64 * 1024]]; -- 64KB
+
+   TTBR0_Granule : constant TG0_Type := TG0_4KB;
+
+   Level1_Translation_Table_Entry_Range_Size : constant Integer_Address :=
+      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level1);
+
+   Level2_Translation_Table_Entry_Range_Size : constant Integer_Address :=
+      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level2);
+
+   Level3_Translation_Table_Entry_Range_Size : constant Integer_Address :=
+      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level3);
 
    -----------------------------------------------------------------------------
    --  TTBRn - Translation Table Base Register 0/1
@@ -696,19 +534,10 @@ private
       with Inline_Always;
 
    -----------------------------------------------------------------------------
-   --  Translation Table Declarations
+   --  Translation Tables Declarations
    -----------------------------------------------------------------------------
 
    Max_Num_Translation_Table_Entries : constant := 512;
-
-   Level1_Translation_Table_Entry_Range_Size : constant Integer_Address :=
-      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level1);
-
-   Level2_Translation_Table_Entry_Range_Size : constant Integer_Address :=
-      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level2);
-
-   Level3_Translation_Table_Entry_Range_Size : constant Integer_Address :=
-      TTBR0_Granule_To_Entry_Range_Size_Map (TTBR0_Granule, TT_Level3);
 
    type Translation_Table_Entry_Index_Type is mod Max_Num_Translation_Table_Entries;
 
@@ -722,78 +551,198 @@ private
      (Translation_Table_Type'Size / System.Storage_Unit /= Page_Size_In_Bytes,
       "Translation_Table_Type has the wrong size");
 
-   Num_Level1_Translation_Table_Entries_Used : constant Integer_Address :=
-      Virtual_Address_Space_Size_In_Bytes / Level1_Translation_Table_Entry_Range_Size;
+   --
+   --  Maximum number of translation tables per CPU.
 
-   subtype Level1_Translation_Table_Entry_Index_Type is
-      Translation_Table_Entry_Index_Type range
-         0 .. Translation_Table_Entry_Index_Type (Num_Level1_Translation_Table_Entries_Used - 1);
+   --  NOTE: For 4KB page granule size, each translation table is 4KB. So,
+   --  the total memory consumed by the translation tables pool is:
+   --  Max_Num_Translation_Tables_Per_Cpu * 4KB = 4MB
+   --
+   Max_Num_Translation_Tables_Per_Cpu : constant := 1024;
 
-   type Level2_Translation_Table_Array_Type is
-      array (Level1_Translation_Table_Entry_Index_Type) of Translation_Table_Type;
+   type Translation_Table_Id_Type is range 0 .. Max_Num_Translation_Tables_Per_Cpu;
+   subtype Valid_Translation_Table_Id_Type is
+      Translation_Table_Id_Type range
+         Translation_Table_Id_Type'First .. Translation_Table_Id_Type'Last - 1;
 
-   type Level3_Translation_Table_Array_Type is
-      array (Level1_Translation_Table_Entry_Index_Type,
-             Translation_Table_Entry_Index_Type) of Translation_Table_Type;
+   Invalid_Translation_Table_Id : constant Translation_Table_Id_Type :=
+      Translation_Table_Id_Type'Last;
+
+   type Translation_Tables_Array_Type is
+      array (Valid_Translation_Table_Id_Type) of Translation_Table_Type
+      with Component_Size => Page_Size_In_Bytes * System.Storage_Unit,
+           Size => Max_Num_Translation_Tables_Per_Cpu * Page_Size_In_Bytes * System.Storage_Unit,
+           Alignment => Page_Size_In_Bytes;
 
    type Translation_Table_Tree_Type is limited record
-      Level1_Translation_Table : Translation_Table_Type := [others => <>];
-      Level2_Translation_Tables : Level2_Translation_Table_Array_Type := [others => [others => <>]];
-      Level3_Translation_Tables : Level3_Translation_Table_Array_Type := [others => [others => <>]];
+      Tables_Pointer : access Translation_Tables_Array_Type := null;
+      Next_Free_Table_Index : Translation_Table_Id_Type := Valid_Translation_Table_Id_Type'First;
+      Level1_Translation_Table_Id : Translation_Table_Id_Type := Invalid_Translation_Table_Id;
    end record;
 
-   --
-   --  Populates the page translation tables for the given address range
-   --  using identity mapping (virtual address = physical address).
-   --
-   procedure Populate_Page_Translation_Tables (
-      Translation_Table_Tree : in out Translation_Table_Tree_Type;
-      Start_Address : System.Address;
-      Size_In_Bytes : Integer_Address;
-      Unprivileged_Permissions : Region_Permissions_Type;
-      Privileged_Permissions : Region_Permissions_Type;
-      Region_Attributes : Region_Attributes_Type)
-      with Pre => Address_Is_Page_Aligned (Start_Address) and then
-                  Size_In_Bytes > 0 and then
-                  Size_In_Bytes mod Page_Size_In_Bytes = 0;
+   function Translation_Table_Tree_Is_Full
+      (Translation_Table_Tree : Translation_Table_Tree_Type)
+      return Boolean is
+      (Translation_Table_Tree.Next_Free_Table_Index = Translation_Table_Id_Type'Last);
+
+   procedure Initialize_Translation_Table_Tree (
+      Translation_Table_Tree : out Translation_Table_Tree_Type;
+      Translation_Tables_Pointer : access Translation_Tables_Array_Type)
+      with Pre => Translation_Tables_Pointer /= null,
+           Post => Translation_Table_Tree.Level1_Translation_Table_Id /=
+                      Invalid_Translation_Table_Id;
+
+   function Address_Is_Aligned_To_Level1_Table_Entry_Range (Address : System.Address)
+      return Boolean is
+      (To_Integer (Address) mod Level1_Translation_Table_Entry_Range_Size = 0);
+
+   function Address_Is_Aligned_To_Level2_Table_Entry_Range (Address : System.Address)
+      return Boolean is
+      (To_Integer (Address) mod Level2_Translation_Table_Entry_Range_Size = 0);
+
+   function  Address_To_Level1_Table_Index (Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type (To_Integer (Address) /
+                                           Level1_Translation_Table_Entry_Range_Size));
+
+   function End_Address_To_Level1_Table_Index (End_Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type ((To_Integer (End_Address) - 1) /
+                                           Level1_Translation_Table_Entry_Range_Size));
+
+   function Address_To_Level2_Table_Index (Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type (
+         (To_Integer (Address) mod Level1_Translation_Table_Entry_Range_Size) /
+            Level2_Translation_Table_Entry_Range_Size));
+
+   function End_Address_To_Level2_Table_Index (End_Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type (
+         ((To_Integer (End_Address) - 1) mod Level1_Translation_Table_Entry_Range_Size) /
+            Level2_Translation_Table_Entry_Range_Size));
+
+   function Address_To_Level3_Table_Index (Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type (
+         (To_Integer (Address) mod Level2_Translation_Table_Entry_Range_Size) /
+         Level3_Translation_Table_Entry_Range_Size));
+
+   function End_Address_To_Level3_Table_Index (End_Address : System.Address)
+      return Translation_Table_Entry_Index_Type is
+      (Translation_Table_Entry_Index_Type (
+         ((To_Integer (End_Address) - 1) mod Level2_Translation_Table_Entry_Range_Size) /
+         Level3_Translation_Table_Entry_Range_Size));
 
    --
-   --  Populates the page translation tables for the given address range
+   --  Populates the translation tables for the given address range
    --  using identity mapping (virtual address = physical address).
    --
-   procedure Populate_Page_Translation_Tables (
+   procedure Populate_Level1_Translation_Table (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       Start_Address : System.Address;
       End_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Page_Attributes : Region_Attributes_Type)
+      Region_Attributes : Region_Attributes_Type)
       with Pre => Cpu_In_Privileged_Mode and then
                   Address_Is_Page_Aligned (Start_Address) and then
                   Address_Is_Page_Aligned (End_Address) and then
                   To_Integer (End_Address) <= Virtual_Address_Space_Size_In_Bytes and then
                   To_Integer (Start_Address) < To_Integer (End_Address);
 
-   procedure Populate_Level3_Translation_Table_Entry (
+   procedure Populate_Level1_Translation_Table_Entry (
+      Translation_Table_Tree : in out Translation_Table_Tree_Type;
+      L1_Translation_Table_Entry : out Translation_Table_Entry_Type;
+      Start_Address : System.Address;
+      End_Address : System.Address;
+      Unprivileged_Permissions : Region_Permissions_Type;
+      Privileged_Permissions : Region_Permissions_Type;
+      Region_Attributes : Region_Attributes_Type);
+
+   procedure Populate_Level2_Translation_Table (
+      Translation_Table_Tree : in out Translation_Table_Tree_Type;
+      L2_Translation_Table : out Translation_Table_Type;
+      Start_Address : System.Address;
+      End_Address : System.Address;
+      Unprivileged_Permissions : Region_Permissions_Type;
+      Privileged_Permissions : Region_Permissions_Type;
+      Region_Attributes : Region_Attributes_Type);
+
+   procedure Populate_Level2_Translation_Table_Entry (
+      Translation_Table_Tree : in out Translation_Table_Tree_Type;
+      L2_Translation_Table_Entry : out Translation_Table_Entry_Type;
+      Start_Address : System.Address;
+      End_Address : System.Address;
+      Unprivileged_Permissions : Region_Permissions_Type;
+      Privileged_Permissions : Region_Permissions_Type;
+      Region_Attributes : Region_Attributes_Type);
+
+   procedure Populate_Level3_Translation_Table (
+      L3_Translation_Table : out Translation_Table_Type;
+      Start_Address : System.Address;
+      End_Address : System.Address;
+      Unprivileged_Permissions : Region_Permissions_Type;
+      Privileged_Permissions : Region_Permissions_Type;
+      Region_Attributes : Region_Attributes_Type);
+
+   procedure Populate_Translation_Table_Inner_Entry (
+      Translation_Table_Entry : out Translation_Table_Entry_Type;
+      Child_Translation_Table_Address : System.Address)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Child_Translation_Table_Address /= System.Null_Address and then
+                  Address_Is_Page_Aligned (Child_Translation_Table_Address) and then
+                  not Translation_Table_Entry.Valid_Entry,
+           Post => Translation_Table_Entry.Valid_Entry and then
+                   Translation_Table_Entry.Entry_Kind =
+                     Translation_Table_Entry_Is_Table_Or_Page;
+
+   procedure Populate_Translation_Table_Leaf_Entry (
       Translation_Table_Entry : out Translation_Table_Entry_Type;
       Start_Physical_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Page_Attributes : Region_Attributes_Type)
+      Region_Attributes : Region_Attributes_Type;
+      Translation_Table_Level : Translation_Table_Level_Type)
       with Pre => Cpu_In_Privileged_Mode and then
                   Address_Is_Page_Aligned (Start_Physical_Address) and then
-                  not Translation_Table_Entry.AF and then
                   not Translation_Table_Entry.Valid_Entry,
            Post => Translation_Table_Entry.Valid_Entry and then
                    Translation_Table_Entry.AF;
 
+   procedure Print_Translation_Table_Leaf_Entry (
+      Translation_Table_Entry : Translation_Table_Entry_Type;
+      Start_Virtual_Address : System.Address;
+      Start_Physical_Address : System.Address;
+      Unprivileged_Permissions : Region_Permissions_Type;
+      Privileged_Permissions : Region_Permissions_Type;
+      Caching_Attributes : Region_Attributes_Type;
+      Translation_Table_Level : Translation_Table_Level_Type);
+
+   procedure Allocate_Translation_Table (
+      Translation_Table_Tree : in out Translation_Table_Tree_Type;
+      Translation_Table_Id : out Valid_Translation_Table_Id_Type)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  not Translation_Table_Tree_Is_Full (Translation_Table_Tree);
+
+   function Address_To_Page_Address_Prefix (Address : System.Address)
+      return Page_Address_Prefix_Type is
+      (Page_Address_Prefix_Type (To_Integer (Address) / Page_Size_In_Bytes));
+
+   function Page_Address_Prefix_To_Address (Page_Address_Prefix : Page_Address_Prefix_Type)
+      return System.Address is
+      (To_Address (Integer_Address (Page_Address_Prefix) * Page_Size_In_Bytes));
+
    --
    --  Translation table tree for each CPU core
    --
-   Translation_Table_Trees :
-      array (Cpu_Core_Id_Type) of Translation_Table_Tree_Type with
-           --  NOTE: This is necessary to prevent gnat from generating a __gnat_malloc call
-           Import,
-           Address => Linker_Memory_Map.Mmu_Translation_Tables_Start_Address;
+   Translation_Table_Trees : array (Cpu_Core_Id_Type) of Translation_Table_Tree_Type;
+
+   --
+   --  Translation tables for each CPU core
+   --
+   Translation_Tables : array (Cpu_Core_Id_Type) of aliased Translation_Tables_Array_Type with
+      Import,
+      External_name => "mmu_translation_tables";
 
 end CPU.Memory_Protection;

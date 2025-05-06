@@ -44,3 +44,15 @@ park_cpu:
      */
 1:  wfi
     b 1b
+
+    .section .mmu_translation_tables
+#if TRANSLATION_TABLES_SIZE_IN_BYTES % LEVEL1_TRANSLATION_RANGE_SIZE_IN_BYTES == 0
+    .balign LEVEL1_TRANSLATION_RANGE_SIZE_IN_BYTES
+#elif TRANSLATION_TABLES_SIZE_IN_BYTES % LEVEL2_TRANSLATION_RANGE_SIZE_IN_BYTES == 0
+    .balign LEVEL2_TRANSLATION_RANGE_SIZE_IN_BYTES
+#else
+    .balign PAGE_SIZE_IN_BYTES
+#endif
+    .global mmu_translation_tables
+mmu_translation_tables:
+    .space TRANSLATION_TABLES_SIZE_IN_BYTES

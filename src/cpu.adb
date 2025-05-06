@@ -30,7 +30,8 @@ package body CPU is
 
    procedure Memory_Barrier is
    begin
-      System.Machine_Code.Asm ("dmb sy",
+      System.Machine_Code.Asm (
+         "dmb sy",
          Clobber => "memory",
          Volatile => True);
    end Memory_Barrier;
@@ -38,7 +39,7 @@ package body CPU is
    procedure Strong_Memory_Barrier is
    begin
       System.Machine_Code.Asm (
-         "dsb sy"  & ASCII.LF &
+         "dsb sy" & ASCII.LF &
          "isb",
          Clobber => "memory",
          Volatile => True);
@@ -48,6 +49,18 @@ package body CPU is
    begin
       System.Machine_Code.Asm ("brk #0", Volatile => True);
    end Break_Point;
+
+   function Count_Leading_Zeros (Value : Cpu_Register_Type) return Cpu_Register_Type is
+      Result : Cpu_Register_Type;
+   begin
+      System.Machine_Code.Asm (
+          "clz %0, %1",
+           Outputs => Cpu_Register_Type'Asm_Output ("=r", Result), --  %0
+           Inputs => Cpu_Register_Type'Asm_Input ("r", Value),     --  %1
+           Volatile => True);
+
+      return Result;
+   end Count_Leading_Zeros;
 
    function Get_CurrentEL return Exception_Level_Type is
       PSTATE_Value : PSTATE_Type;
@@ -70,5 +83,24 @@ package body CPU is
 
       return PSTATE_Value.DAIF;
    end Get_DAIF;
+
+   function Get_SCTLR_EL1 return SCTLR_EL1_Type is
+      SCTLR_EL1_Value : SCTLR_EL1_Type;
+   begin
+      System.Machine_Code.Asm (
+         "mrs %0, sctlr_el1",
+         Outputs => SCTLR_EL1_Type'Asm_Output ("=r", SCTLR_EL1_Value), --  %0
+         Volatile => True);
+
+      return SCTLR_EL1_Value;
+   end Get_SCTLR_EL1;
+
+   procedure Set_SCTLR_EL1 (SCTLR_EL1_Value : SCTLR_EL1_Type) is
+   begin
+      System.Machine_Code.Asm (
+         "msr sctlr_el1, %0",
+         Inputs => SCTLR_EL1_Type'Asm_Input ("r", SCTLR_EL1_Value), --  %0
+         Volatile => True);
+   end Set_SCTLR_EL1;
 
 end CPU;

@@ -4,7 +4,7 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
-private with CPU;
+with CPU;
 with Uart_Driver;
 with System;
 with Interfaces;
@@ -29,6 +29,27 @@ package Utils is
    function Get_Code_Location_Here return System.Address
       with Inline_Always;
 
+   -----------------------------------------------------------------------------
+   --  Bit manipulation utilities
+   -----------------------------------------------------------------------------
+
+   use CPU;
+
+   type Bit_Index_Type is mod Cpu_Register_Type'Size;
+
+   function Bit_Mask (Bit_Index : Bit_Index_Type) return Cpu_Register_Type is
+    (Cpu_Register_Type (2 ** Natural (Bit_Index)));
+
+   function Is_Value_Power_Of_Two (Value : Cpu_Register_Type) return Boolean is
+      (Value /= 0 and then
+       (Value and (Value - 1)) = 0);
+
+   subtype Log_Base_2_Type is Natural range 0 .. Natural (Bit_Index_Type'Last);
+
+   function Get_Log_Base_2 (Value : Cpu_Register_Type) return Log_Base_2_Type
+      with Pre => Is_Value_Power_Of_Two (Value) and then
+                  Value <= Cpu_Register_Type'Last;
+
 private
 
    procedure Last_Chance_Handler (Msg : System.Address; Line : Integer)
@@ -39,5 +60,8 @@ private
 
    function Get_Code_Location_Here return System.Address is
       (CPU.Get_Call_Address);
+
+   function Get_Log_Base_2 (Value : Cpu_Register_Type) return Log_Base_2_Type is
+      (Log_Base_2_Type'Last - Log_Base_2_Type (CPU.Count_Leading_Zeros (Value)));
 
 end Utils;
