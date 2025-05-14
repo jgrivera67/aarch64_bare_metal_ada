@@ -45,28 +45,31 @@ is
    Virtual_Address_Space_Size_In_Bytes : constant Integer_Address;
 
    procedure Configure_Memory_Region (
-      Start_Address : System.Address;
+      Start_Virtual_Address : System.Address;
       Size_In_Bytes : Integer_Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Address_Is_Page_Aligned (Start_Address) and then
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
                   Size_In_Bytes > 0 and then
-                  Size_In_Bytes mod Page_Size_In_Bytes = 0;
+                  Size_In_Bytes mod Page_Size_In_Bytes = 0 and then
+                  To_Integer (Start_Virtual_Address) + Size_In_Bytes <=
+                     Virtual_Address_Space_Size_In_Bytes;
 
    procedure Configure_Memory_Region (
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Address_Is_Page_Aligned (Start_Address) and then
-                  Address_Is_Page_Aligned (End_Address) and then
-                  To_Integer (Start_Address) < To_Integer (End_Address);
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) <= Virtual_Address_Space_Size_In_Bytes;
 
-      procedure Handle_Prefetch_Abort_Exception
+   procedure Handle_Prefetch_Abort_Exception
       with Pre => Cpu_In_Privileged_Mode;
 
    procedure Handle_Data_Abort_Exception
@@ -377,6 +380,30 @@ private
        TT_Normal_Memory_Write_Back_Read_Allocate_No_Write_Allocate_Cacheable => 2#11#);
 
    --
+   --  Intermediate Physical Address Size
+   --
+   type IPS_Type is
+      (IPS_32_Bits, --  4GB
+       IPS_36_Bits, --  64GB
+       IPS_40_Bits, --  1TB
+       IPS_42_Bits, --  4TB
+       IPS_44_Bits, --  16TB
+       IPS_48_Bits, --  256TB
+       IPS_52_Bits, --  4PB
+       IPS_56_Bits) --  64PB
+      with Size => 3;
+
+   for IPS_Type use
+      (IPS_32_Bits => 2#000#,
+       IPS_36_Bits => 2#001#,
+       IPS_40_Bits => 2#010#,
+       IPS_42_Bits => 2#011#,
+       IPS_44_Bits => 2#100#,
+       IPS_48_Bits => 2#101#,
+       IPS_52_Bits => 2#110#,
+       IPS_56_Bits => 2#111#);
+
+   --
    --  Translation Control Register for ELx
    --  - T0SZ, SH0, TG0: controls the translation regime for the translation
    --    table pointed to by TTBR0_ELx. The maximum address range that can be
@@ -404,6 +431,7 @@ private
             ORGN1 : Translation_Table_Cacheability_Type := TT_Normal_Memory_Non_Cacheable;
             SH1 : Sharability_Attribute_Type := Non_Shareable;
             TG1 : TG1_Type := TG1_4KB;
+            IPS : IPS_Type := IPS_32_Bits;
       end case;
    end record
    with Size => 64,
@@ -412,17 +440,18 @@ private
 
    for TCR_Type use record
       Value at 0 range 0 .. 63;
-      T0SZ at 0 range 0 .. 5;
+      T0SZ  at 0 range 0 .. 5;
       IRGN0 at 0 range 8 .. 9;
       ORGN0 at 0 range 10 .. 11;
-      SH0  at 0 range 12 .. 13;
-      TG0  at 0 range 14 .. 15;
-      T1SZ at 0 range 16 .. 21;
-      EPD1 at 0 range 23 .. 23;
+      SH0   at 0 range 12 .. 13;
+      TG0   at 0 range 14 .. 15;
+      T1SZ  at 0 range 16 .. 21;
+      EPD1  at 0 range 23 .. 23;
       IRGN1 at 0 range 24 .. 25;
       ORGN1 at 0 range 26 .. 27;
-      SH1  at 0 range 28 .. 29;
-      TG1  at 0 range 30 .. 31;
+      SH1   at 0 range 28 .. 29;
+      TG1   at 0 range 30 .. 31;
+      IPS   at 0 range 32 .. 34;
    end record;
 
    function Get_TCR return TCR_Type
@@ -574,8 +603,11 @@ private
            Size => Max_Num_Translation_Tables_Per_Cpu * Page_Size_In_Bytes * System.Storage_Unit,
            Alignment => Page_Size_In_Bytes;
 
+   type Translation_Tables_Array_Pointer_Type is
+      access all Translation_Tables_Array_Type;
+
    type Translation_Table_Tree_Type is limited record
-      Tables_Pointer : access Translation_Tables_Array_Type := null;
+      Tables_Pointer : Translation_Tables_Array_Pointer_Type := null;
       Next_Free_Table_Index : Translation_Table_Id_Type := Valid_Translation_Table_Id_Type'First;
       Level1_Translation_Table_Id : Translation_Table_Id_Type := Invalid_Translation_Table_Id;
    end record;
@@ -587,7 +619,7 @@ private
 
    procedure Initialize_Translation_Table_Tree (
       Translation_Table_Tree : out Translation_Table_Tree_Type;
-      Translation_Tables_Pointer : access Translation_Tables_Array_Type)
+      Translation_Tables_Pointer : Translation_Tables_Array_Pointer_Type)
       with Pre => Translation_Tables_Pointer /= null,
            Post => Translation_Table_Tree.Level1_Translation_Table_Id /=
                       Invalid_Translation_Table_Id;
@@ -600,15 +632,14 @@ private
       return Boolean is
       (To_Integer (Address) mod Level2_Translation_Table_Entry_Range_Size = 0);
 
-   function  Address_To_Level1_Table_Index (Address : System.Address)
+   function Address_To_Level1_Table_Index (Address : System.Address)
       return Translation_Table_Entry_Index_Type is
       (Translation_Table_Entry_Index_Type (To_Integer (Address) /
                                            Level1_Translation_Table_Entry_Range_Size));
 
-   function End_Address_To_Level1_Table_Index (End_Address : System.Address)
-      return Translation_Table_Entry_Index_Type is
-      (Translation_Table_Entry_Index_Type ((To_Integer (End_Address) - 1) /
-                                           Level1_Translation_Table_Entry_Range_Size));
+   function Level1_Table_Index_To_Base_Virtual_Address (L1_Index : Translation_Table_Entry_Index_Type)
+      return System.Address
+   is (To_Address (Integer_Address (L1_Index) * Level1_Translation_Table_Entry_Range_Size));
 
    function Address_To_Level2_Table_Index (Address : System.Address)
       return Translation_Table_Entry_Index_Type is
@@ -616,22 +647,16 @@ private
          (To_Integer (Address) mod Level1_Translation_Table_Entry_Range_Size) /
             Level2_Translation_Table_Entry_Range_Size));
 
-   function End_Address_To_Level2_Table_Index (End_Address : System.Address)
-      return Translation_Table_Entry_Index_Type is
-      (Translation_Table_Entry_Index_Type (
-         ((To_Integer (End_Address) - 1) mod Level1_Translation_Table_Entry_Range_Size) /
-            Level2_Translation_Table_Entry_Range_Size));
+   function Level2_Table_Index_To_Base_Virtual_Address (
+      L1_Index, L2_Index : Translation_Table_Entry_Index_Type)
+      return System.Address
+   is (To_Address (Integer_Address (L1_Index) * Level1_Translation_Table_Entry_Range_Size +
+                   Integer_Address (L2_Index) * Level2_Translation_Table_Entry_Range_Size));
 
    function Address_To_Level3_Table_Index (Address : System.Address)
       return Translation_Table_Entry_Index_Type is
       (Translation_Table_Entry_Index_Type (
          (To_Integer (Address) mod Level2_Translation_Table_Entry_Range_Size) /
-         Level3_Translation_Table_Entry_Range_Size));
-
-   function End_Address_To_Level3_Table_Index (End_Address : System.Address)
-      return Translation_Table_Entry_Index_Type is
-      (Translation_Table_Entry_Index_Type (
-         ((To_Integer (End_Address) - 1) mod Level2_Translation_Table_Entry_Range_Size) /
          Level3_Translation_Table_Entry_Range_Size));
 
    --
@@ -640,51 +665,76 @@ private
    --
    procedure Populate_Level1_Translation_Table (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Address_Is_Page_Aligned (Start_Address) and then
-                  Address_Is_Page_Aligned (End_Address) and then
-                  To_Integer (End_Address) <= Virtual_Address_Space_Size_In_Bytes and then
-                  To_Integer (Start_Address) < To_Integer (End_Address);
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) - To_Integer (Start_Virtual_Address) <=
+                     Max_Num_Translation_Table_Entries * Level1_Translation_Table_Entry_Range_Size;
 
    procedure Populate_Level1_Translation_Table_Entry (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L1_Translation_Table_Entry : out Translation_Table_Entry_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Region_Attributes : Region_Attributes_Type);
+      Region_Attributes : Region_Attributes_Type)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) - To_Integer (Start_Virtual_Address) <=
+                      Level1_Translation_Table_Entry_Range_Size;
 
    procedure Populate_Level2_Translation_Table (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L2_Translation_Table : out Translation_Table_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Region_Attributes : Region_Attributes_Type);
+      Region_Attributes : Region_Attributes_Type)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) - To_Integer (Start_Virtual_Address) <=
+                     Max_Num_Translation_Table_Entries * Level2_Translation_Table_Entry_Range_Size;
 
    procedure Populate_Level2_Translation_Table_Entry (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L2_Translation_Table_Entry : out Translation_Table_Entry_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Region_Attributes : Region_Attributes_Type);
+      Region_Attributes : Region_Attributes_Type)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) - To_Integer (Start_Virtual_Address) <=
+                    Level2_Translation_Table_Entry_Range_Size;
 
    procedure Populate_Level3_Translation_Table (
       L3_Translation_Table : out Translation_Table_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
-      Region_Attributes : Region_Attributes_Type);
+      Region_Attributes : Region_Attributes_Type)
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Address_Is_Page_Aligned (Start_Virtual_Address) and then
+                  Address_Is_Page_Aligned (End_Virtual_Address) and then
+                  To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
+                  To_Integer (End_Virtual_Address) - To_Integer (Start_Virtual_Address) <=
+                     Max_Num_Translation_Table_Entries * Level3_Translation_Table_Entry_Range_Size;
 
    procedure Populate_Translation_Table_Inner_Entry (
       Translation_Table_Entry : out Translation_Table_Entry_Type;
@@ -705,7 +755,13 @@ private
       Region_Attributes : Region_Attributes_Type;
       Translation_Table_Level : Translation_Table_Level_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Address_Is_Page_Aligned (Start_Physical_Address) and then
+                  (case Translation_Table_Level is
+                      when TT_Level1 =>
+                         Address_Is_Aligned_To_Level1_Table_Entry_Range (Start_Physical_Address),
+                      when TT_Level2 =>
+                         Address_Is_Aligned_To_Level2_Table_Entry_Range (Start_Physical_Address),
+                      when TT_Level3 =>
+                         Address_Is_Page_Aligned (Start_Physical_Address)) and then
                   not Translation_Table_Entry.Valid_Entry,
            Post => Translation_Table_Entry.Valid_Entry and then
                    Translation_Table_Entry.AF;

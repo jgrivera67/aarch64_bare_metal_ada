@@ -25,6 +25,16 @@ package CPU.Caches is
       with Pre => System.Storage_Elements.To_Integer (Cache_Line_Address) mod
                      Cache_Line_Size_In_Bytes = 0;
 
+   use type System.Address;
+
+   procedure Invalidate_Data_Cache_Range (Start_Address : System.Address;
+                                          End_Address : System.Address)
+      with Pre => System.Storage_Elements.To_Integer (Start_Address) mod
+                     Cache_Line_Size_In_Bytes = 0 and then
+                   System.Storage_Elements.To_Integer (End_Address) mod
+                     Cache_Line_Size_In_Bytes = 0 and then
+                   Start_Address < End_Address;
+
    procedure Flush_Data_Cache_Line (Cache_Line_Address : System.Address)
       with Pre => System.Storage_Elements.To_Integer (Cache_Line_Address) mod
                      Cache_Line_Size_In_Bytes = 0;

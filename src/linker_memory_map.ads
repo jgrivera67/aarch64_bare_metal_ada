@@ -20,8 +20,6 @@ package Linker_Memory_Map is
    Global_Data_Region_Start_Address : constant System.Address;
    Global_Data_Region_End_Address : constant System.Address;
 
-   Mmu_Translation_Tables_Start_Address : constant System.Address;
-
 private
 
    --
@@ -76,13 +74,5 @@ private
 
    Global_Data_Region_End_Address : constant System.Address :=
       Global_Data_Region_End_Linker_Symbol'Address;
-
-   Mmu_Translation_Tables_Start_Linker_Symbol : Interfaces.Unsigned_8
-      with Import,
-           Convention => Asm,
-           External_Name => "__mmu_translation_tables_start";
-
-   Mmu_Translation_Tables_Start_Address : constant System.Address :=
-      Mmu_Translation_Tables_Start_Linker_Symbol'Address;
 
 end Linker_Memory_Map;

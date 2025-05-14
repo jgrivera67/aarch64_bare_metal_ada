@@ -38,19 +38,15 @@ package body CPU.Caches is
 
    procedure Invalidate_Data_Cache is
    begin
-      Strong_Memory_Barrier;
-      System.Machine_Code.Asm (
-         "dc zva, xzr",
-         Clobber => "memory",
-         Volatile => True);
-      Strong_Memory_Barrier;
+      null;
    end Invalidate_Data_Cache;
 
    procedure Invalidate_Instruction_Cache is
    begin
       Strong_Memory_Barrier;
+      --  Invalidate all to Point of Unification, Inner Shareable:
       System.Machine_Code.Asm (
-         "ic iallu",
+         "ic ialluis",
          Clobber => "memory",
          Volatile => True);
       Strong_Memory_Barrier;
@@ -66,6 +62,17 @@ package body CPU.Caches is
          Volatile => True);
       Strong_Memory_Barrier;
    end Invalidate_Data_Cache_Line;
+
+   procedure Invalidate_Data_Cache_Range (Start_Address : System.Address;
+                                          End_Address : System.Address) is
+      Cache_Line_Address : System.Address := Start_Address;
+   begin
+      loop
+         Invalidate_Data_Cache_Line (Cache_Line_Address);
+         Cache_Line_Address := To_Address (To_Integer (@) + Cache_Line_Size_In_Bytes);
+         exit when Cache_Line_Address = End_Address;
+      end loop;
+   end Invalidate_Data_Cache_Range;
 
    procedure Flush_Data_Cache_Line (Cache_Line_Address : System.Address) is
    begin

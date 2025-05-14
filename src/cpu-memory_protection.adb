@@ -10,6 +10,7 @@
 --
 
 with Board;
+with CPU.Caches;
 with CPU.Interrupt_Handling;
 with Linker_Memory_Map;
 with Utils;
@@ -21,8 +22,6 @@ package body CPU.Memory_Protection is
 
    procedure Configure_Global_Regions is
       Cpu_Id : constant Cpu_Core_Id_Type := Get_Cpu_Id;
-      Translation_Table_Tree : Translation_Table_Tree_Type renames
-         Translation_Table_Trees (Cpu_Id);
    begin
       Utils.Print_String ("Configuring MMU translation tables ..." & ASCII.LF);
       Disable_MMU;
@@ -50,7 +49,7 @@ package body CPU.Memory_Protection is
                with Import, Address => System.Null_Address;
          begin
             Null_Page := [others => Interfaces.Unsigned_64'Last];
-            Configure_Memory_Region (Start_Address => System.Null_Address,
+            Configure_Memory_Region (Start_Virtual_Address => System.Null_Address,
                                     Size_In_Bytes => Page_Size_In_Bytes,
                                     Unprivileged_Permissions => None,
                                     --  NOTE: PERM_NONE not supported for privileged mode in ARMv8-A MMU
@@ -111,14 +110,16 @@ package body CPU.Memory_Protection is
       --
       --  Configure MMU translation tables region:
       --
-      Configure_Memory_Region (Translation_Tables'Address,
-                               Translation_Tables'Size / System.Storage_Unit,
+      Configure_Memory_Region (Translation_Tables (Cpu_Id)'Address,
+                               Translation_Tables_Array_Type'Object_Size / System.Storage_Unit,
                                Unprivileged_Permissions => None,
                                Privileged_Permissions => Read_Write,
                                Region_Attributes => Normal_Memory_Write_Back_Cacheable);
 
       Enable_MMU;
       Utils.Print_String ("MMU enabled" & ASCII.LF);
+      CPU.Caches.Enable_Caches;
+      Utils.Print_String ("Caches enabled" & ASCII.LF);
    end Configure_Global_Regions;
 
    procedure Initialize is
@@ -168,6 +169,7 @@ package body CPU.Memory_Protection is
       TCR_Value.ORGN1 := TT_Normal_Memory_Write_Back_Read_Allocate_Write_Allocate_Cacheable;
       TCR_Value.SH1 := Inner_Shareable;
       TCR_Value.TG1 := TG1_4KB;
+      TCR_Value.IPS := IPS_40_Bits;
       Set_TCR (TCR_Value);
 
       --
@@ -188,7 +190,7 @@ package body CPU.Memory_Protection is
 
    procedure Initialize_Translation_Table_Tree (
       Translation_Table_Tree : out Translation_Table_Tree_Type;
-      Translation_Tables_Pointer : access Translation_Tables_Array_Type) is
+      Translation_Tables_Pointer : Translation_Tables_Array_Pointer_Type) is
       L1_Table_Id : Translation_Table_Id_Type;
    begin
       Translation_Table_Tree.Tables_Pointer := Translation_Tables_Pointer;
@@ -198,25 +200,26 @@ package body CPU.Memory_Protection is
    end Initialize_Translation_Table_Tree;
 
    procedure Configure_Memory_Region (
-      Start_Address : System.Address;
+      Start_Virtual_Address : System.Address;
       Size_In_Bytes : Integer_Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
+      with SPARK_Mode => On
    is
-      End_Address : constant System.Address := To_Address (
-         To_Integer (Start_Address) + Size_In_Bytes);
+      End_Virtual_Address : constant System.Address := To_Address (
+         To_Integer (Start_Virtual_Address) + Size_In_Bytes);
    begin
-      Configure_Memory_Region (Start_Address,
-                               End_Address,
+      Configure_Memory_Region (Start_Virtual_Address,
+                               End_Virtual_Address,
                                Unprivileged_Permissions,
                                Privileged_Permissions,
                                Region_Attributes);
    end Configure_Memory_Region;
 
    procedure Configure_Memory_Region (
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
@@ -225,62 +228,76 @@ package body CPU.Memory_Protection is
          Translation_Table_Trees (Get_Cpu_Id);
    begin
       Populate_Level1_Translation_Table (Translation_Table_Tree,
-                                         Start_Address,
-                                         End_Address,
+                                         Start_Virtual_Address,
+                                         End_Virtual_Address,
                                          Unprivileged_Permissions,
                                          Privileged_Permissions,
                                          Region_Attributes);
+      if Region_Attributes = Normal_Memory_Write_Back_Cacheable or else
+         Region_Attributes = Normal_Memory_Write_Through_Cacheable
+      then
+         CPU.Caches.Invalidate_Data_Cache_Range (Start_Virtual_Address, End_Virtual_Address);
+      end if;
    end Configure_Memory_Region;
 
    procedure Populate_Level1_Translation_Table (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
    is
       L1_First_Index : constant Translation_Table_Entry_Index_Type :=
-         Address_To_Level1_Table_Index (Start_Address);
+         Address_To_Level1_Table_Index (Start_Virtual_Address);
+      Last_Virtual_Address : constant System.Address :=
+         To_Address (To_Integer (End_Virtual_Address) - 1);
       L1_Last_Index : constant Translation_Table_Entry_Index_Type :=
-         End_Address_To_Level1_Table_Index (End_Address);
+         Address_To_Level1_Table_Index (Last_Virtual_Address);
       L1_Table_Id : constant Translation_Table_Id_Type :=
          Translation_Table_Tree.Level1_Translation_Table_Id;
       L1_Table : Translation_Table_Type renames
          Translation_Table_Tree.Tables_Pointer.all (L1_Table_Id);
-      L1_Start_Address : System.Address := Start_Address;
    begin
       for L1_Index in L1_First_Index .. L1_Last_Index loop
-         pragma Loop_Invariant (L1_Start_Address >= Start_Address and then
-                                L1_Start_Address < End_Address);
          declare
-            L1_End_Address : constant System.Address :=
-               (if L1_Index < L1_Last_Index then
-                  To_Address (To_Integer (L1_Start_Address) +
-                              Level1_Translation_Table_Entry_Range_Size)
+            L1_Start_Virtual_Address : constant System.Address :=
+               (if L1_Index > L1_First_Index then
+                   Level1_Table_Index_To_Base_Virtual_Address (L1_Index)
                 else
-                  End_Address);
+                  Start_Virtual_Address);
+            L1_End_Virtual_Address : constant System.Address :=
+               (if L1_Index < L1_Last_Index then
+                   Level1_Table_Index_To_Base_Virtual_Address (L1_Index + 1)
+                else
+                   End_Virtual_Address);
          begin
+            pragma Loop_Invariant (
+               L1_Start_Virtual_Address < L1_End_Virtual_Address and then
+               L1_Start_Virtual_Address >= Start_Virtual_Address and then
+               L1_End_Virtual_Address <= End_Virtual_Address and then
+               (if L1_Start_Virtual_Address > Start_Virtual_Address then
+                   Address_Is_Aligned_To_Level1_Table_Entry_Range (L1_Start_Virtual_Address)) and then
+               (if L1_End_Virtual_Address < End_Virtual_Address then
+                   Address_Is_Aligned_To_Level1_Table_Entry_Range (L1_End_Virtual_Address)));
+
             Populate_Level1_Translation_Table_Entry (
                Translation_Table_Tree,
                L1_Table (L1_Index),
-               L1_Start_Address,
-               L1_End_Address,
+               L1_Start_Virtual_Address,
+               L1_End_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes);
          end;
-
-         L1_Start_Address :=
-            To_Address (To_Integer (@) + Level2_Translation_Table_Entry_Range_Size);
       end loop;
    end Populate_Level1_Translation_Table;
 
    procedure Populate_Level1_Translation_Table_Entry (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L1_Translation_Table_Entry : out Translation_Table_Entry_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
@@ -300,15 +317,15 @@ package body CPU.Memory_Protection is
             Populate_Level2_Translation_Table (
                Translation_Table_Tree,
                L2_Table,
-               Start_Address,
-               End_Address,
+               Start_Virtual_Address,
+               End_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes);
          end;
       else
-         if Address_Is_Aligned_To_Level1_Table_Entry_Range (Start_Address) and then
-            Address_Is_Aligned_To_Level1_Table_Entry_Range (End_Address)
+         if Address_Is_Aligned_To_Level1_Table_Entry_Range (Start_Virtual_Address) and then
+            Address_Is_Aligned_To_Level1_Table_Entry_Range (End_Virtual_Address)
          then
             --
             --  Block of memory is aligned to level 1 translation table entry size
@@ -316,7 +333,7 @@ package body CPU.Memory_Protection is
             --
             Populate_Translation_Table_Leaf_Entry (
                L1_Translation_Table_Entry,
-               Start_Address,
+               Start_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes,
@@ -330,8 +347,8 @@ package body CPU.Memory_Protection is
                Populate_Level2_Translation_Table (
                   Translation_Table_Tree,
                   L2_Table,
-                  Start_Address,
-                  End_Address,
+                  Start_Virtual_Address,
+                  End_Virtual_Address,
                   Unprivileged_Permissions,
                   Privileged_Permissions,
                   Region_Attributes);
@@ -347,49 +364,60 @@ package body CPU.Memory_Protection is
    procedure Populate_Level2_Translation_Table (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L2_Translation_Table : out Translation_Table_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
    is
+      L1_Index : constant Translation_Table_Entry_Index_Type :=
+         Address_To_Level1_Table_Index (Start_Virtual_Address);
       L2_First_Index : constant Translation_Table_Entry_Index_Type :=
-         Address_To_Level2_Table_Index (Start_Address);
+         Address_To_Level2_Table_Index (Start_Virtual_Address);
+      Last_Virtual_Address : constant System.Address :=
+         To_Address (To_Integer (End_Virtual_Address) - 1);
       L2_Last_Index : constant Translation_Table_Entry_Index_Type :=
-         End_Address_To_Level2_Table_Index (End_Address);
-      L2_Start_Address : System.Address := Start_Address;
+         Address_To_Level2_Table_Index (Last_Virtual_Address);
    begin
       for L2_Index in L2_First_Index .. L2_Last_Index loop
-         pragma Loop_Invariant (L2_Start_Address >= Start_Address and then
-                                L2_Start_Address < End_Address);
          declare
-            L2_End_Address : constant System.Address :=
+            L2_Start_Virtual_Address : constant System.Address :=
+               (if L2_Index > L2_First_Index then
+                   Level2_Table_Index_To_Base_Virtual_Address (L1_Index, L2_Index)
+                else
+                  Start_Virtual_Address);
+            L2_End_Virtual_Address : constant System.Address :=
                (if L2_Index < L2_Last_Index then
-                  To_Address (To_Integer (L2_Start_Address) +
-                              Level2_Translation_Table_Entry_Range_Size)
-                  else
-                  End_Address);
+                   Level2_Table_Index_To_Base_Virtual_Address (L1_Index, L2_Index + 1)
+                else
+                   End_Virtual_Address);
          begin
+            pragma Loop_Invariant (
+               L2_Start_Virtual_Address < L2_End_Virtual_Address and then
+               L2_Start_Virtual_Address >= Start_Virtual_Address and then
+               L2_End_Virtual_Address <= End_Virtual_Address and then
+               (if L2_Start_Virtual_Address > Start_Virtual_Address then
+                   Address_Is_Aligned_To_Level2_Table_Entry_Range (L2_Start_Virtual_Address)) and then
+               (if L2_End_Virtual_Address < End_Virtual_Address then
+                   Address_Is_Aligned_To_Level2_Table_Entry_Range (L2_End_Virtual_Address)));
+
             Populate_Level2_Translation_Table_Entry (
                Translation_Table_Tree,
                L2_Translation_Table (L2_Index),
-               L2_Start_Address,
-               L2_End_Address,
+               L2_Start_Virtual_Address,
+               L2_End_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes);
          end;
-
-         L2_Start_Address :=
-            To_Address (To_Integer (@) + Level2_Translation_Table_Entry_Range_Size);
       end loop;
    end Populate_Level2_Translation_Table;
 
    procedure Populate_Level2_Translation_Table_Entry (
       Translation_Table_Tree : in out Translation_Table_Tree_Type;
       L2_Translation_Table_Entry : out Translation_Table_Entry_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
@@ -408,15 +436,15 @@ package body CPU.Memory_Protection is
          begin
             Populate_Level3_Translation_Table (
                L3_Table,
-               Start_Address,
-               End_Address,
+               Start_Virtual_Address,
+               End_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes);
          end;
       else
-         if Address_Is_Aligned_To_Level2_Table_Entry_Range (Start_Address) and then
-            Address_Is_Aligned_To_Level2_Table_Entry_Range (End_Address)
+         if Address_Is_Aligned_To_Level2_Table_Entry_Range (Start_Virtual_Address) and then
+            Address_Is_Aligned_To_Level2_Table_Entry_Range (End_Virtual_Address)
          then
             --
             --  Block of memory is aligned to level 2 translation table entry size
@@ -424,7 +452,7 @@ package body CPU.Memory_Protection is
             --
             Populate_Translation_Table_Leaf_Entry (
                L2_Translation_Table_Entry,
-               Start_Address,
+               Start_Virtual_Address,
                Unprivileged_Permissions,
                Privileged_Permissions,
                Region_Attributes,
@@ -437,8 +465,8 @@ package body CPU.Memory_Protection is
             begin
                Populate_Level3_Translation_Table (
                   L3_Table,
-                  Start_Address,
-                  End_Address,
+                  Start_Virtual_Address,
+                  End_Virtual_Address,
                   Unprivileged_Permissions,
                   Privileged_Permissions,
                   Region_Attributes);
@@ -453,30 +481,32 @@ package body CPU.Memory_Protection is
 
    procedure Populate_Level3_Translation_Table (
       L3_Translation_Table : out Translation_Table_Type;
-      Start_Address : System.Address;
-      End_Address : System.Address;
+      Start_Virtual_Address : System.Address;
+      End_Virtual_Address : System.Address;
       Unprivileged_Permissions : Region_Permissions_Type;
       Privileged_Permissions : Region_Permissions_Type;
       Region_Attributes : Region_Attributes_Type)
    is
       L3_First_Index : constant Translation_Table_Entry_Index_Type :=
-         Address_To_Level3_Table_Index (Start_Address);
+         Address_To_Level3_Table_Index (Start_Virtual_Address);
+      Last_Virtual_Address : constant System.Address :=
+         To_Address (To_Integer (End_Virtual_Address) - 1);
       L3_Last_Index : constant Translation_Table_Entry_Index_Type :=
-         End_Address_To_Level3_Table_Index (End_Address);
-      L3_Start_Address : System.Address := Start_Address;
+         Address_To_Level3_Table_Index (Last_Virtual_Address);
+      L3_Start_Virtual_Address : System.Address := Start_Virtual_Address;
    begin
       for L3_Index in L3_First_Index .. L3_Last_Index loop
-         pragma Loop_Invariant (L3_Start_Address >= Start_Address and then
-                                L3_Start_Address < End_Address);
+         pragma Loop_Invariant (L3_Start_Virtual_Address >= Start_Virtual_Address and then
+                                L3_Start_Virtual_Address < End_Virtual_Address);
          Populate_Translation_Table_Leaf_Entry (
             L3_Translation_Table (L3_Index),
-            L3_Start_Address,
+            L3_Start_Virtual_Address,
             Unprivileged_Permissions,
             Privileged_Permissions,
             Region_Attributes,
             TT_Level3);
 
-         L3_Start_Address :=
+         L3_Start_Virtual_Address :=
             To_Address (To_Integer (@) + Level3_Translation_Table_Entry_Range_Size);
       end loop;
    end Populate_Level3_Translation_Table;
@@ -706,7 +736,7 @@ package body CPU.Memory_Protection is
    begin
       System.Machine_Code.Asm (
          "msr tcr_el1, %0",
-         Inputs => TCR_Type'Asm_Input ("r", TCR_Value), --  %0
+         Inputs => Interfaces.Unsigned_64'Asm_Input ("r", TCR_Value.Value), --  %0
          Volatile => True);
    end Set_TCR;
 
@@ -768,10 +798,8 @@ package body CPU.Memory_Protection is
       Strong_Memory_Barrier;
       SCTLR_Value := Get_SCTLR_EL1;
       SCTLR_Value.M := MMU_Enabled;
-      SCTLR_Value.C := Cacheable; --???
-      SCTLR_Value.I := Instruction_Access_Cacheable; --???
-      --SCTLR_Value.A :=  Alignment_Check_Enabled;
-      --SCTLR_Value.SA0 := SP_EL0_Alignment_Check_Enabled;
+      SCTLR_Value.A :=  Alignment_Check_Enabled;
+      SCTLR_Value.SA0 := SP_EL0_Alignment_Check_Enabled;
       --  NOTE: We don't set SA, because we never initialize SP_EL1
       --  SCTLR_Value.SA := SP_EL1_Alignment_Check_Enabled;
       Set_SCTLR_EL1 (SCTLR_Value);
@@ -789,7 +817,6 @@ package body CPU.Memory_Protection is
       SCTLR_Value.M := MMU_Disabled;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
-      Invalidate_TLB;
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);
    end Disable_MMU;
 

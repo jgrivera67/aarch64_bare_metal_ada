@@ -15,8 +15,10 @@ package Board is
    --
    --  Main peripherals and ARM local peripherals in "high peripheral" mode.
    --
-   Global_Mmio_Region_Start_Address : constant System.Address := System'To_Address (16#10_7000_0000#);
-   Global_Mmio_Region_End_Address : constant System.Address := System'To_Address (16#10_f000_0000#);
+   --Global_Mmio_Region_Start_Address : constant System.Address := System'To_Address (16#10_7000_0000#);
+   Global_Mmio_Region_Start_Address : constant System.Address := System'To_Address (16#10_4000_0000#);
+   --Global_Mmio_Region_End_Address : constant System.Address := System'To_Address (16#10_f000_0000#);
+   Global_Mmio_Region_End_Address : constant System.Address := System'To_Address (16#10_8000_0000#);
 
    UART0_Base : constant System.Address := System'To_Address (16#10_7d00_1000#);
 
