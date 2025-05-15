@@ -31,9 +31,6 @@ is
       Normal_Memory_Write_Through_Cacheable,
       Normal_Memory_Write_Back_Cacheable);
 
-   function Mmu_Is_Enabled return Boolean
-      with Pre => Cpu_In_Privileged_Mode;
-
    procedure Configure_Global_Regions
       with Pre => Cpu_In_Privileged_Mode and then
                   not Mmu_Is_Enabled,
@@ -194,9 +191,6 @@ private
             (Memory_Kind => Normal_Memory_Outer_Write_Back,
              Normal_Memory_Subkind => Normal_Memory_Inner_Write_Back),
         others => <>];
-
-   function Mmu_Is_Enabled return Boolean is
-      (Get_SCTLR_EL1.M = MMU_Enabled);
 
    -----------------------------------------------------------------------------
    --  Translation Table Entry Declarations
@@ -403,6 +397,24 @@ private
        IPS_52_Bits => 2#110#,
        IPS_56_Bits => 2#111#);
 
+   type HA_Type is
+      (Hardware_Access_Flag_Update_Disabled,
+       Hardware_Access_Flag_Update_Enabled)
+      with Size => 1;
+
+   for HA_Type use
+      (Hardware_Access_Flag_Update_Disabled => 2#0#,
+       Hardware_Access_Flag_Update_Enabled => 2#1#);
+
+   type HD_Type is
+      (Hardware_Dirty_Flag_Management_Disabled,
+       Hardware_Dirty_Flag_Management_Enabled)
+      with Size => 1;
+
+   for HD_Type use
+      (Hardware_Dirty_Flag_Management_Disabled => 2#0#,
+       Hardware_Dirty_Flag_Management_Enabled => 2#1#);
+
    --
    --  Translation Control Register for ELx
    --  - T0SZ, SH0, TG0: controls the translation regime for the translation
@@ -432,6 +444,8 @@ private
             SH1 : Sharability_Attribute_Type := Non_Shareable;
             TG1 : TG1_Type := TG1_4KB;
             IPS : IPS_Type := IPS_32_Bits;
+            HA : HA_Type := Hardware_Access_Flag_Update_Disabled;
+            HD : HD_Type := Hardware_Dirty_Flag_Management_Disabled;
       end case;
    end record
    with Size => 64,
@@ -452,6 +466,8 @@ private
       SH1   at 0 range 28 .. 29;
       TG1   at 0 range 30 .. 31;
       IPS   at 0 range 32 .. 34;
+      HA    at 0 range 39 .. 39;
+      HD    at 0 range 40 .. 40;
    end record;
 
    function Get_TCR return TCR_Type
@@ -792,12 +808,12 @@ private
    --
    --  Translation table tree for each CPU core
    --
-   Translation_Table_Trees : array (Cpu_Core_Id_Type) of Translation_Table_Tree_Type;
+   Translation_Table_Trees : array (Valid_Cpu_Core_Id_Type) of Translation_Table_Tree_Type;
 
    --
    --  Translation tables for each CPU core
    --
-   Translation_Tables : array (Cpu_Core_Id_Type) of aliased Translation_Tables_Array_Type with
+   Translation_Tables : array (Valid_Cpu_Core_Id_Type) of aliased Translation_Tables_Array_Type with
       Import,
       External_name => "mmu_translation_tables";
 

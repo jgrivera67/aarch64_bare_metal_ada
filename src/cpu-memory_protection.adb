@@ -18,12 +18,16 @@ with System.Machine_Code;
 
 package body CPU.Memory_Protection is
 
-   Debug_On : constant Boolean := True;
+   Debug_On : constant Boolean := False;
 
    procedure Configure_Global_Regions is
-      Cpu_Id : constant Cpu_Core_Id_Type := Get_Cpu_Id;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
    begin
-      Utils.Print_String ("Configuring MMU translation tables ..." & ASCII.LF);
+      if Debug_On then
+         Utils.Print_String ("Configuring MMU translation tables ..." & ASCII.LF);
+      end if;
+
+      CPU.Caches.Disable_Caches;
       Disable_MMU;
       Initialize;
 
@@ -48,7 +52,9 @@ package body CPU.Memory_Protection is
             Null_Page : array (1 .. Page_Size_In_Dwords) of Interfaces.Unsigned_64
                with Import, Address => System.Null_Address;
          begin
-            Null_Page := [others => Interfaces.Unsigned_64'Last];
+            --  NOTE: We cannot change the contents of page 0 as that would overwrite
+            --  the spin addresses to start the secondary CPUs.
+            --  Null_Page := [others => Interfaces.Unsigned_64'Last];
             Configure_Memory_Region (Start_Virtual_Address => System.Null_Address,
                                     Size_In_Bytes => Page_Size_In_Bytes,
                                     Unprivileged_Permissions => None,
@@ -117,9 +123,7 @@ package body CPU.Memory_Protection is
                                Region_Attributes => Normal_Memory_Write_Back_Cacheable);
 
       Enable_MMU;
-      Utils.Print_String ("MMU enabled" & ASCII.LF);
       CPU.Caches.Enable_Caches;
-      Utils.Print_String ("Caches enabled" & ASCII.LF);
    end Configure_Global_Regions;
 
    procedure Initialize is
@@ -134,7 +138,7 @@ package body CPU.Memory_Protection is
       end Load_Memory_Attributes_Lookup_Table;
 
       TCR_Value : TCR_Type;
-      Cpu_Id : constant Cpu_Core_Id_Type := Get_Cpu_Id;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
       Translation_Table_Tree : Translation_Table_Tree_Type renames Translation_Table_Trees (Cpu_Id);
    begin
       pragma Assert (Level3_Translation_Table_Entry_Range_Size = Page_Size_In_Bytes);
@@ -170,6 +174,7 @@ package body CPU.Memory_Protection is
       TCR_Value.SH1 := Inner_Shareable;
       TCR_Value.TG1 := TG1_4KB;
       TCR_Value.IPS := IPS_40_Bits;
+      TCR_Value.HA := Hardware_Access_Flag_Update_Enabled;
       Set_TCR (TCR_Value);
 
       --
@@ -805,6 +810,10 @@ package body CPU.Memory_Protection is
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);
+
+      if Debug_On then
+         Utils.Print_String ("MMU enabled" & ASCII.LF);
+      end if;
    end Enable_MMU;
 
    procedure Disable_MMU is

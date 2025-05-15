@@ -16,9 +16,6 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
 
    procedure Set_Saved_PC (PC_Value : System.Address);
 
-   function Cpu_Interrupting_Disabled return Boolean with
-      Inline_Always, Suppress => All_Checks;
-
    procedure Wait_For_Interrupt with
       Pre => Cpu_In_Privileged_Mode,
       Inline_Always;

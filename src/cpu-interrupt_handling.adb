@@ -18,11 +18,14 @@ package body CPU.Interrupt_Handling is
    use ASCII;
 
    procedure Print_Exception_Info (Exception_Description : String) is
+      Cpu_Id : constant CPU.Multicore.Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       ESR_EL1_Value : constant ESR_EL1_Type := Get_ESR_EL1;
       FAR_EL1_Value : constant Interfaces.Unsigned_64 := Get_FAR_EL1;
       ELR_EL1_Value : constant Interfaces.Unsigned_64 := Get_ELR_EL1;
    begin
-      Utils.Print_String (LF & "*** EL1 ");
+      Utils.Print_String (LF & "*** CPU");
+      Utils.Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
+      Utils.Print_String (" EL1 ");
       Utils.Print_String (Exception_Description);
       Utils.Print_String (" (Exception class: ");
       Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (ESR_EL1_Value.EC'Enum_Rep));
@@ -131,12 +134,6 @@ package body CPU.Interrupt_Handling is
       Decrease_Interrupt_Nesting (Interrupt_Nesting);
       return Stack_Pointer;
    end Ada_Exit_Interrupt_Context;
-
-   function Cpu_Interrupting_Disabled return Boolean is
-      DAIF_Value : constant DAIF_Type := Get_DAIF;
-   begin
-      return DAIF_Value.F = Interrupt_Disabled and then DAIF_Value.I = Interrupt_Disabled;
-   end Cpu_Interrupting_Disabled;
 
    procedure Wait_For_Interrupt is
    begin

@@ -103,4 +103,20 @@ package body CPU is
          Volatile => True);
    end Set_SCTLR_EL1;
 
+   function Mmu_Is_Enabled return Boolean is
+      (Get_SCTLR_EL1.M = MMU_Enabled);
+
+   function Caches_Are_Enabled return Boolean is
+      SCTLR_EL1_Value : constant SCTLR_EL1_Type := Get_SCTLR_EL1;
+   begin
+      return SCTLR_EL1_Value.C = Cacheable and then
+             SCTLR_EL1_Value.I = Instruction_Access_Cacheable;
+   end Caches_Are_Enabled;
+
+   function Cpu_Interrupting_Disabled return Boolean is
+      DAIF_Value : constant DAIF_Type := Get_DAIF;
+   begin
+      return DAIF_Value.F = Interrupt_Disabled and then DAIF_Value.I = Interrupt_Disabled;
+   end Cpu_Interrupting_Disabled;
+
 end CPU;

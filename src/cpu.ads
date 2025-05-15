@@ -31,6 +31,17 @@ package CPU is
    function Cpu_In_Privileged_Mode return Boolean with
       Inline_Always, Suppress => All_Checks;
 
+   function Mmu_Is_Enabled return Boolean
+      with Inline_Always,
+           Pre => Cpu_In_Privileged_Mode;
+
+   function Caches_Are_Enabled return Boolean
+      with Inline_Always,
+           Pre => Cpu_In_Privileged_Mode;
+
+   function Cpu_Interrupting_Disabled return Boolean with
+      Inline_Always, Suppress => All_Checks;
+
    procedure Break_Point with Inline_Always;
 
    procedure Memory_Barrier with

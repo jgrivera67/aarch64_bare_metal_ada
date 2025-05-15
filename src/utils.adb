@@ -5,10 +5,12 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
+with CPU.Multicore;
 with Timer_Driver;
 
 package body Utils is
-   Last_Chance_Handler_Running : Boolean := False;
+   Last_Chance_Handler_Running : array (CPU.Multicore.Valid_Cpu_Core_Id_Type) of Boolean :=
+      [others => False];
 
    procedure Put_Char (C : Character) is
    begin
@@ -110,6 +112,22 @@ package body Utils is
       Print_String (Str, End_Line);
    end Print_Number_Hexadecimal;
 
+   Console_Spinlock : CPU.Multicore.Spinlock_Type;
+
+   procedure Lock_Console is
+      Cpu_Id : constant CPU.Multicore.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+   begin
+      CPU.Multicore.Spinlock_Acquire (Console_Spinlock);
+      Print_String ("CPU");
+      Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
+      Print_String (": ");
+   end Lock_Console;
+
+   procedure Unlock_Console is
+   begin
+      CPU.Multicore.Spinlock_Release (Console_Spinlock);
+   end Unlock_Console;
+
    function Receive_Byte_With_Timeout (Timeout_Usec : Interfaces.Unsigned_64)
       return Uart_Driver.Maybe_Byte_Type
    is
@@ -127,6 +145,7 @@ package body Utils is
    end Receive_Byte_With_Timeout;
 
    procedure Last_Chance_Handler (Msg : System.Address; Line : Integer) is
+      Cpu_Id : constant CPU.Multicore.Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       Msg_Text : String (1 .. 128) with Address => Msg;
       Msg_Length : Natural := 0;
    begin
@@ -138,19 +157,21 @@ package body Utils is
          Msg_Length := Msg_Length + 1;
       end loop;
 
-      if Last_Chance_Handler_Running then
+      if Last_Chance_Handler_Running (Cpu_Id) then
          Print_String ("*** Recursive call to Last_Chance_Handler: '");
          Print_String (Msg_Text (1 .. Msg_Length));
          Print_String ("'" & ASCII.LF);
          CPU.Park_Cpu;
       end if;
 
-      Last_Chance_Handler_Running := True;
+      Last_Chance_Handler_Running (Cpu_Id) := True;
 
       --
       --  Print exception message to UART:
       --
-      Print_String (ASCII.LF & "*** Exception: '");
+      Print_String (ASCII.LF & "*** CPU");
+      Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
+      Print_String (" Exception: '");
       Print_String (Msg_Text (1 .. Msg_Length));
       if Line /= 0 then
          Print_String ("' at line ");

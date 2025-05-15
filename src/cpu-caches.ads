@@ -11,11 +11,16 @@
 with System.Storage_Elements;
 
 package CPU.Caches is
+
    procedure Enable_Caches
-      with Pre => Cpu_In_Privileged_Mode;
+      with Pre => Cpu_In_Privileged_Mode and then
+                  Mmu_Is_Enabled,
+           Post => Caches_Are_Enabled;
 
    procedure Disable_Caches
-      with Pre => Cpu_In_Privileged_Mode;
+      with Pre => Cpu_In_Privileged_Mode and then
+                  not Mmu_Is_Enabled,
+           Post => not Caches_Are_Enabled;
 
    procedure Invalidate_Data_Cache;
 

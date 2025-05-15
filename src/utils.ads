@@ -29,6 +29,10 @@ package Utils is
    function Get_Code_Location_Here return System.Address
       with Inline_Always;
 
+   procedure Lock_Console;
+
+   procedure Unlock_Console;
+
    -----------------------------------------------------------------------------
    --  Bit manipulation utilities
    -----------------------------------------------------------------------------

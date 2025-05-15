@@ -84,6 +84,8 @@
 
 #define NUM_CPUS 4u
 
+#define CACHE_LINE_SIZE_IN_BYTES  64u
+
 /*
  * NOTE: The value of this constant must match `Max_Num_Translation_Tables_Per_Cpu`
  * in cpu-memory_protection.ads
@@ -93,4 +95,3 @@
 .extern interrupt_vector_table
 .extern isr_stacks
 .extern park_cpu
-.extern secondary_cpu_main
