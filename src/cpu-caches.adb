@@ -95,4 +95,14 @@ package body CPU.Caches is
       Strong_Memory_Barrier;
    end Flush_Invalidate_Data_Cache_Line;
 
+   procedure Flush_Invalidate_Data_Cache_Range (Start_Address : System.Address;
+                                                End_Address : System.Address) is
+      Cache_Line_Address : System.Address := Start_Address;
+   begin
+      loop
+         Flush_Invalidate_Data_Cache_Line (Cache_Line_Address);
+         Cache_Line_Address := To_Address (To_Integer (@) + Cache_Line_Size_In_Bytes);
+         exit when Cache_Line_Address = End_Address;
+      end loop;
+   end Flush_Invalidate_Data_Cache_Range;
 end CPU.Caches;

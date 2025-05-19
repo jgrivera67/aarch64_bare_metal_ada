@@ -93,6 +93,16 @@ interrupt_vector_table:
       msr SPSel, #0
 
       /*
+       * NOTE: This is not supported on Cortex-A72 (ARMv8.0-A) and it is not
+       * needed for Cortex-A76 (ARMv8.2-A), as we are setting the SPAN bit in
+       * SCTLR_EL1.
+       */
+#if 0
+      msr PAN, #0
+#endif
+      isb sy
+
+      /*
        * Save general-purpose registers on the stack:
        *
        * NOTE: SP does not need to be saved here,

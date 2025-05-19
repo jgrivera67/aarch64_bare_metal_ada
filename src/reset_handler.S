@@ -53,8 +53,7 @@ reset_handler_el1:
     /*
      * Initialize stack pointer for the current CPU:
      */
-    mrs x0, mpidr_el1
-    and x0, x0, #MPIDR_EL1_CPU_ID_MASK
+    GET_CPU_ID x0       // x0 = CPU id
     adrp x1, isr_stacks
     add x1, x1, #:lo12:isr_stacks
     mov x2, #GUARDED_ISR_STACK_SIZE_IN_BYTES

@@ -26,10 +26,7 @@ package Utils is
 
    function Get_Char return Character renames Uart_Driver.Get_Char;
 
-   function Get_Code_Location_Here return System.Address
-      with Inline_Always;
-
-   procedure Lock_Console;
+   procedure Lock_Console (Print_Cpu : Boolean);
 
    procedure Unlock_Console;
 
@@ -61,9 +58,6 @@ private
           Export,
           Convention => C,
           External_Name => "__gnat_last_chance_handler";
-
-   function Get_Code_Location_Here return System.Address is
-      (CPU.Get_Call_Address);
 
    function Get_Log_Base_2 (Value : Cpu_Register_Type) return Log_Base_2_Type is
       (Log_Base_2_Type'Last - Log_Base_2_Type (CPU.Count_Leading_Zeros (Value)));

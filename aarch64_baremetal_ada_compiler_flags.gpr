@@ -49,7 +49,7 @@ abstract project Aarch64_Baremetal_Ada_Compiler_Flags is
       when "yes" =>
          Linker_Script_Path := "../../../uart_boot_memory_layout.ld";
       when "no" =>
-         Linker_Script_Path := "../../../kernel8_img_memory_layout.ld";
+         Linker_Script_Path := "../../../sd_card_boot_memory_layout.ld";
       when others =>
          null;
    end case;

@@ -16,19 +16,17 @@ with Interfaces;
 
 package body CPU.Multicore is
 
-   MPIDR_Core_Id_Mask : constant := 2#1111_1111#;
-
    function Get_Cpu_Id return Valid_Cpu_Core_Id_Type is
-      use type Interfaces.Unsigned_64;
-      Reg_Value : Interfaces.Unsigned_64;
+      MPIDR_EL1_Value : MPIDR_EL1_Type;
    begin
       System.Machine_Code.Asm (
          "mrs %0, mpidr_el1",
-         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", Reg_Value), --  %0
+         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", MPIDR_EL1_Value.Value), --  %0
          Volatile => True);
 
-      Reg_Value := @ and MPIDR_Core_Id_Mask;
-      return Valid_Cpu_Core_Id_Type (Reg_Value);
+      return Valid_Cpu_Core_Id_Type (
+         (if MPIDR_EL1_Value.MT = 1 then MPIDR_EL1_Value.Aff1
+                                    else MPIDR_EL1_Value.Aff0));
    end Get_Cpu_Id;
 
    procedure Wait_For_Multicore_Event is
@@ -42,14 +40,10 @@ package body CPU.Multicore is
    end Send_Multicore_Event;
 
    procedure Start_Secondary_Cpus is
-      procedure Reset_Handler with
-         Import,
-         Convention => C,
-         External_Name => "reset_handler",
-         No_Return;
+      Reset_Handler_Address : constant System.Address := Get_Reset_Handler_Address;
    begin
       for Cpu_Id in Secondary_Cpu_Core_Id_Type loop
-         Board.Start_Secondary_Cpu (Cpu_Id, Reset_Handler'Address);
+         Board.Start_Secondary_Cpu (Cpu_Id, Reset_Handler_Address);
       end loop;
    end Start_Secondary_Cpus;
 
@@ -93,8 +87,8 @@ package body CPU.Multicore is
    function Atomic_Operation (Atomic_Operator : Atomic_Operator_Type;
                               Atomic_Counter : in out Atomic_Counter_Type;
                               Value : Cpu_Register_Type) return Cpu_Register_Type
-    with Inline_Always,
-         Pre => Mmu_Is_Enabled
+    with Inline_Always --???,
+         --???Pre => Mmu_Is_Enabled
    is
       Old_Value : Cpu_Register_Type;
       New_Value : Cpu_Register_Type;

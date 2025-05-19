@@ -9,7 +9,8 @@
 --  @summary HiRTOS to target platform interface for ARMv8-A aarch64 architecture - Interrupt handling
 --
 
---??? with Interrupt_Controller;
+--??? with Interrupt_Controller_Driver;
+with CPU.Multicore;
 with Gdb_Server;
 with Utils;
 with System.Machine_Code;
@@ -18,11 +19,12 @@ package body CPU.Interrupt_Handling is
    use ASCII;
 
    procedure Print_Exception_Info (Exception_Description : String) is
-      Cpu_Id : constant CPU.Multicore.Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       ESR_EL1_Value : constant ESR_EL1_Type := Get_ESR_EL1;
       FAR_EL1_Value : constant Interfaces.Unsigned_64 := Get_FAR_EL1;
       ELR_EL1_Value : constant Interfaces.Unsigned_64 := Get_ELR_EL1;
    begin
+      Utils.Lock_Console (Print_Cpu => False);
       Utils.Print_String (LF & "*** CPU");
       Utils.Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
       Utils.Print_String (" EL1 ");
@@ -36,6 +38,7 @@ package body CPU.Interrupt_Handling is
       Utils.Print_String (", faulting PC: ");
       Utils.Print_Number_Hexadecimal (ELR_EL1_Value);
       Utils.Print_String (")" & LF);
+      Utils.Unlock_Console;
    end Print_Exception_Info;
 
    procedure Handle_EL1_Error_Exception (Exception_Description : String) with No_Return is
@@ -47,7 +50,11 @@ package body CPU.Interrupt_Handling is
    procedure Handle_EL1_Debug_Exception (Exception_Description : String) is
    begin
       Print_Exception_Info (Exception_Description);
-      Gdb_Server.Run_Gdb_Server;
+      if CPU.Multicore.Get_Cpu_Id = CPU.Valid_Cpu_Core_Id_Type'First then
+         Gdb_Server.Run_Gdb_Server;
+      else
+         raise Program_Error with Exception_Description;
+      end if;
    end Handle_EL1_Debug_Exception;
 
    procedure Ada_Handle_EL1_Synchronous_Exception is
@@ -99,13 +106,13 @@ package body CPU.Interrupt_Handling is
 
    procedure Ada_Handle_EL1_Irq_Interrupt is
    begin
-      --???Interrupt_Controller.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Irq);
+      --???Interrupt_Controller_Driver.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Irq);
       null;
    end Ada_Handle_EL1_Irq_Interrupt;
 
    procedure Ada_Handle_EL1_Fiq_Interrupt is
    begin
-      --???Interrupt_Controller.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Fiq);
+      --???Interrupt_Controller_Driver.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Fiq);
       null;
    end Ada_Handle_EL1_Fiq_Interrupt;
 

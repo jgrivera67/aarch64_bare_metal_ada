@@ -12,18 +12,6 @@
 package CPU.Multicore
    with SPARK_Mode => On
 is
-   Num_Cpu_Cores : constant := 4;
-
-   type Cpu_Core_Id_Type is range 0 .. Num_Cpu_Cores;
-
-   subtype Valid_Cpu_Core_Id_Type is
-     Cpu_Core_Id_Type range Cpu_Core_Id_Type'First .. Cpu_Core_Id_Type'Last - 1;
-
-   Invalid_Cpu_Core_Id : constant Cpu_Core_Id_Type := Cpu_Core_Id_Type'Last;
-
-   subtype Secondary_Cpu_Core_Id_Type is Valid_Cpu_Core_Id_Type range
-      Valid_Cpu_Core_Id_Type'First + 1 .. Valid_Cpu_Core_Id_Type'Last;
-
    function Get_Cpu_Id return Valid_Cpu_Core_Id_Type
       with Inline_Always,
            Suppress => All_Checks;
@@ -71,12 +59,14 @@ is
 
    procedure Spinlock_Acquire (Spinlock : in out Spinlock_Type)
       with Pre => Cpu_In_Privileged_Mode and then
+                  Mmu_Is_Enabled and then
                   Spinlock_Owner (Spinlock) /= Get_Cpu_Id,
            Post => Spinlock_Owner (Spinlock) = Get_Cpu_Id and then
                    Cpu_Interrupting_Disabled;
 
    procedure Spinlock_Release (Spinlock : in out Spinlock_Type)
       with Pre => Cpu_In_Privileged_Mode and then
+                  Mmu_Is_Enabled and then
                   Spinlock_Owner (Spinlock) = Get_Cpu_Id and then
                   Cpu_Interrupting_Disabled,
            Post => Spinlock_Owner (Spinlock) /= Get_Cpu_Id;
@@ -108,5 +98,4 @@ private
 
    function Spinlock_Owner (Spinlock : Spinlock_Type) return Cpu_Core_Id_Type is
       (Spinlock.Owner);
-
 end CPU.Multicore;

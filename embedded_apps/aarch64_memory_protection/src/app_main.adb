@@ -6,6 +6,7 @@
 --
 
 with Board;
+with CPU;
 with CPU.Memory_Protection;
 with Utils;
 with Interfaces;
@@ -14,7 +15,7 @@ with GNAT.Source_Info;
 
 procedure App_Main is
    use ASCII;
-   Code_Address : constant System.Address := Utils.Get_Code_Location_Here;
+   Code_Address : constant System.Address := CPU.Get_Reset_Handler_Address;
    C : Character;
 
    procedure Cause_Data_Abort_Unmapped_Write is
@@ -34,10 +35,10 @@ procedure App_Main is
 
 begin
    Utils.Print_String (
-      LF & Board.Board_Name & " AArch64 Memory Protection (built on " &
+      LF & Board.Board_Name & " AArch64 Memory Protection - built on " &
       GNAT.Source_Info.Compilation_Date &
       " at " & GNAT.Source_Info.Compilation_Time &
-      ") from address ");
+      ", boot address ");
    Utils.Print_Number_Hexadecimal (
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);
@@ -46,13 +47,16 @@ begin
 
    loop
       Utils.Print_String (LF & "1. Data abort for unmapped address write" & LF);
-      Utils.Print_String (LF & "2. Data abort for null pointer write" & LF);
+      Utils.Print_String ("2. Data abort for null pointer write" & LF);
+      Utils.Print_String ("3. Breakpoint" & LF);
       C := Utils.Get_Char;
       case C is
          when '1' =>
             Cause_Data_Abort_Unmapped_Write;
          when '2' =>
             Cause_Data_Abort_Null_Pointer_Write;
+         when '3' =>
+            CPU.Break_Point;
          when others =>
             Utils.Print_String (LF & "Invalid option: '");
             Utils.Put_Char (C);

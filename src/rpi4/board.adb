@@ -11,7 +11,7 @@
 
 package body Board is
 
-   procedure Start_Secondary_Cpu (Cpu_Id : Secondary_Cpu_Core_Id_Type;
+   procedure Start_Secondary_Cpu (Cpu_Id : CPU.Secondary_Cpu_Core_Id_Type;
                                   Entry_Point_Address : System.Address) is
       Spin_Address : System.Address renames Secondary_Cpu_To_Spin_Address_Map (Cpu_Id);
       Secondary_Cpu_Spin_Entry : System.Address with Import, Address => Spin_Address;

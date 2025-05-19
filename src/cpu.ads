@@ -8,6 +8,7 @@
 --  @summary CPU Utilities
 --
 
+private with Bit_Sized_Integer_Types;
 with System.Storage_Elements;
 with Interfaces;
 
@@ -20,8 +21,27 @@ package CPU is
 
    Page_Size_In_Bytes : constant := 4_096;
 
+   Num_Cpu_Cores : constant := 4;
+
+   type Cpu_Core_Id_Type is range 0 .. Num_Cpu_Cores;
+
+   subtype Valid_Cpu_Core_Id_Type is
+     Cpu_Core_Id_Type range Cpu_Core_Id_Type'First .. Cpu_Core_Id_Type'Last - 1;
+
+   Invalid_Cpu_Core_Id : constant Cpu_Core_Id_Type := Cpu_Core_Id_Type'Last;
+
+   subtype Secondary_Cpu_Core_Id_Type is Valid_Cpu_Core_Id_Type range
+      Valid_Cpu_Core_Id_Type'First + 1 .. Valid_Cpu_Core_Id_Type'Last;
+
+   type Cpu_Model_Type is (
+      Cortex_A72, --  Raspberry PI 4
+      Cortex_A76  --  Raspberry PI 5
+   );
+
    function Get_Call_Address return System.Address with
       Inline_Always => False, Suppress => All_Checks;
+
+   function Get_Reset_Handler_Address return System.Address;
 
    procedure Park_Cpu with
       Import,
@@ -95,6 +115,15 @@ package CPU is
    end Generic_Execution_Stack;
 
 private
+
+   procedure Reset_Handler with
+      Import,
+      Convention => C,
+      External_Name => "reset_handler",
+      No_Return;
+
+   function Get_Reset_Handler_Address return System.Address is
+      (Reset_Handler'Address);
 
    -----------------------------------------------------------------------------
    --  CPU status register declarations
@@ -224,7 +253,7 @@ private
    function Cpu_In_Privileged_Mode return Boolean is
       (Get_CurrentEL /= EL0);
 
------------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
    --  SCTLR_EL1 register declarations
    -----------------------------------------------------------------------------
 
@@ -365,6 +394,15 @@ private
      (APIAKey_EL1_Pointer_Authentication_Disabled => 2#0#,
       APIAKey_EL1_Pointer_Authentication_Enabled => 2#1#);
 
+   type Set_Privileged_Access_Never_Type is
+      (Set_Privileged_Access_Never_Enabled,
+       Set_Privileged_Access_Never_Disabled)
+   with Size => 1;
+
+   for Set_Privileged_Access_Never_Type use
+     (Set_Privileged_Access_Never_Enabled => 2#0#,
+      Set_Privileged_Access_Never_Disabled => 2#1#);
+
    --
    --  System control register for EL1
    --
@@ -383,6 +421,7 @@ private
       nTWI : EL0_WFI_Trap_Disable_Type := EL0_WFI_Trap_Enabled;
       nTWE : EL0_WFE_Trap_Disable_Type := EL0_WFE_Trap_Enabled;
       WXN : Write_Permission_Implies_XN_Enable_Type := Write_Permission_Implies_XN_Disabled;
+      SPAN : Set_Privileged_Access_Never_Type := Set_Privileged_Access_Never_Enabled;
       E0E : EL0_Endianness_Type := EL0_Is_Little_Endian;
       EE : EL1_Endianness_Type := EL1_Is_Little_Endian;
       EnDA : APDAKey_EL1_Pointer_Authentication_Enable_Type := APDAKey_EL1_Pointer_Authentication_Disabled;
@@ -404,6 +443,7 @@ private
       nTWI at 0 range 16 .. 16;
       nTWE at 0 range 18 .. 18;
       WXN at 0 range 19 .. 19;
+      SPAN at 0 range 23 .. 23;
       E0E at 0 range 24 .. 24;
       EE at 0 range 25 .. 25;
       EnDA at 0 range 27 .. 27;
@@ -414,5 +454,54 @@ private
    function Get_SCTLR_EL1 return SCTLR_EL1_Type;
 
    procedure Set_SCTLR_EL1 (SCTLR_EL1_Value : SCTLR_EL1_Type);
+
+   -----------------------------------------------------------------------------
+   --  MPIDR_EL1 register declarations
+   -----------------------------------------------------------------------------
+
+   use Bit_Sized_Integer_Types;
+
+   type MPIDR_EL1_Type (As_Value : Boolean := True)  is record
+      case As_Value is
+         when True =>
+            Value : Interfaces.Unsigned_64 := 0;
+         when False =>
+            Aff0 : Interfaces.Unsigned_8 := 0;  --  CPU ID if MT is 0
+            Aff1 : Interfaces.Unsigned_8 := 0;  --  CPU ID if MT is 1
+            Aff2 : Interfaces.Unsigned_8 := 0;  --  Affinity level 2 Cluster Id
+            MT   : Bit_Type := 0;               --  0: Aff0 is CPU ID, 1: Aff1 is CPU ID
+            U    : Bit_Type := 0;               --  Uniprocessor
+            Res1 : Bit_Type := 1;               --  Reserved field set to 1
+            Aff3 : Interfaces.Unsigned_8 := 0;  --  Affinity level 3 Cluster Id
+      end case;
+   end record
+   with Size => 64,
+        Bit_Order => System.Low_Order_First,
+        Unchecked_Union;
+
+   for MPIDR_EL1_Type use record
+      Value at 0 range 0 .. 63;
+      Aff0  at 0 range 0 .. 7;
+      Aff1  at 0 range 8 .. 15;
+      Aff2  at 0 range 16 .. 23;
+      MT    at 0 range 24 .. 24;
+      U     at 0 range 30 .. 30;
+      Res1  at 0 range 31 .. 31;
+      Aff3  at 0 range 32 .. 39;
+   end record;
+
+   function Cpu_Id_To_MPIDR (Cpu_Id : Valid_Cpu_Core_Id_Type;
+                             Cpu_Model : Cpu_Model_Type)
+      return MPIDR_EL1_Type is
+      (case Cpu_Model is
+         when Cortex_A72 =>
+            (As_Value => False,
+             Aff0 => Interfaces.Unsigned_8 (Cpu_Id),
+             others => <>),
+         when Cortex_A76 =>
+            (As_Value => False,
+             Aff1 => Interfaces.Unsigned_8 (Cpu_Id),
+             MT => 1,
+             others => <>));
 
 end CPU;

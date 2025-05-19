@@ -15,11 +15,38 @@
          ((BIT(_most_significant_bit_index) - 1u) &                     \
           ~(BIT(_least_significant_bit_index) - 1u)))
 
-#define KERNEL8_IMG_BOOT_ADDR 0x80000u
+#if 0 // ???
+/*
+ * NOTE: This address must match the value of BOOT_ADDRESS in sd_card_boot_memory_layout.ld
+ */
+#define DEFAULT_BOOT_ADDR     0x80000u
 
-#define UART_BOOT_LOAD_ADDR 0x100000u
+/*
+ * NOTE: This address must match the value of BOOT_ADDRESS in uart_boot_memory_layout.ld
+ */
+#define UART_BOOT_LOAD_ADDR   0x100000u
+#else
+/*
+ * NOTE: This address must match the value of BOOT_ADDRESS in sd_card_boot_memory_layout.ld
+ */
+#define DEFAULT_BOOT_ADDR     0x80000u
 
-#define MPIDR_EL1_CPU_ID_MASK 0x3u
+/*
+ * NOTE: This address must match the value of BOOT_ADDRESS in uart_boot_memory_layout.ld
+ */
+#define UART_BOOT_LOAD_ADDR   0x100000u
+#endif
+
+/*
+ * MPIDR_EL1 bit fields
+ */
+#define MPIDR_EL1_AFF0_LSB 0u
+#define MPIDR_EL1_AFF0_WIDTH 8u
+#define MPIDR_EL1_AFF1_LSB 8u
+#define MPIDR_EL1_AFF1_WIDTH 8u
+#define MPIDR_EL1_AFF2_LSB 16u
+#define MPIDR_EL1_AFF2_WIDTH 8u
+#define MPIDR_EL1_MT_MASK BIT(24u)
 
 /*
  * Bit masks to use with msr DAIFset/DAIFclr:
@@ -70,6 +97,11 @@
 #define CPUECTLR_EL1_SMPEN_MASK BIT(6u)
 
 #define GUARDED_ISR_STACK_SIZE_IN_BYTES (ISR_STACK_SIZE_IN_BYTES + PAGE_SIZE_IN_BYTES)
+
+/*
+ * NOTE: The value of this constant must match the value of `ISR_Stack_Size_In_Bytes`
+ * in cpu-interrupt_handling.ads
+ */
 #define ISR_STACK_SIZE_IN_BYTES (4u * PAGE_SIZE_IN_BYTES)
 
 #define LEVEL1_TRANSLATION_RANGE_SIZE_IN_BYTES (1024u * 1024u * 1024u) // 1Gb
@@ -92,6 +124,22 @@
  */
 #define MAX_NUM_TRANSLATION_TABLES_PER_CPU 1024u
 
-.extern interrupt_vector_table
-.extern isr_stacks
-.extern park_cpu
+        .extern interrupt_vector_table
+        .extern isr_stacks
+        .extern park_cpu
+
+/**
+ * Get CPU id from MPIDR
+ * @post CPU id is in \_dest_reg_
+ * Clobbered registers: x1
+ */
+        .macro GET_CPU_ID _dest_reg_
+        mrs \_dest_reg_, mpidr_el1
+        and x1, \_dest_reg_, #MPIDR_EL1_MT_MASK
+        cbnz x1, 0f
+        ubfx \_dest_reg_, \_dest_reg_, #MPIDR_EL1_AFF0_LSB, #MPIDR_EL1_AFF0_WIDTH
+        b 1f
+0:
+        ubfx \_dest_reg_, \_dest_reg_, #MPIDR_EL1_AFF1_LSB, #MPIDR_EL1_AFF1_WIDTH
+1:
+        .endm

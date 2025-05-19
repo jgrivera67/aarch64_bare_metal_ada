@@ -14,8 +14,10 @@ package body Gdb_Server is
       Saved_PC : constant System.Address := CPU.Interrupt_Handling.Get_Saved_PC;
       C : Character;
    begin
+      Utils.Lock_Console (Print_Cpu => True);
       Utils.Print_String (ASCII.LF & "Running GDB server ..." & ASCII.LF);
       Utils.Print_String ("GDB server not implemented yet" & ASCII.LF);
+      Utils.Unlock_Console;
       loop
          C := Utils.Get_Char;
          --???

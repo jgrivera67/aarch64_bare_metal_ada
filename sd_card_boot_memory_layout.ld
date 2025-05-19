@@ -1,5 +1,5 @@
 /**
- * Linker script to create image to boot as kernel8.img from an SD card
+ * Linker script to create image to boot from an SD card
  */
 ENTRY(reset_handler);
 

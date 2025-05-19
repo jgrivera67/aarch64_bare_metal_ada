@@ -14,7 +14,7 @@ with GNAT.Source_Info;
 
 procedure App_Main is
    use ASCII;
-   Code_Address : constant System.Address := Utils.Get_Code_Location_Here;
+   Code_Address : constant System.Address := CPU.Get_Reset_Handler_Address;
    C : Character;
 
    procedure Cause_Data_Abort is
@@ -42,10 +42,10 @@ procedure App_Main is
 
 begin
    Utils.Print_String (
-      LF & Board.Board_Name & " AArch64 Exceptions (built on " &
+      LF & Board.Board_Name & " AArch64 Exceptions - built on " &
       GNAT.Source_Info.Compilation_Date &
       " at " & GNAT.Source_Info.Compilation_Time &
-      ") from address ");
+      ", boot address ");
    Utils.Print_Number_Hexadecimal (
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);

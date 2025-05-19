@@ -12,6 +12,7 @@
 with Board;
 with CPU.Caches;
 with CPU.Interrupt_Handling;
+with CPU.Multicore;
 with Linker_Memory_Map;
 with Utils;
 with System.Machine_Code;
@@ -21,7 +22,7 @@ package body CPU.Memory_Protection is
    Debug_On : constant Boolean := False;
 
    procedure Configure_Global_Regions is
-      Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
    begin
       if Debug_On then
          Utils.Print_String ("Configuring MMU translation tables ..." & ASCII.LF);
@@ -40,7 +41,7 @@ package body CPU.Memory_Protection is
                                Privileged_Permissions => Read_Execute,
                                Region_Attributes =>
                                  --  Only reads need to be cached
-                                 Normal_Memory_Write_Through_Cacheable);
+                                 Normal_Memory_Write_Back_Cacheable);
 
       --
       --  Set NULL pointer de-reference guard region:
@@ -73,7 +74,7 @@ package body CPU.Memory_Protection is
                                Privileged_Permissions => Read_Only,
                                Region_Attributes =>
                                  --  Only reads need to be cached
-                                 Normal_Memory_Write_Through_Cacheable);
+                                 Normal_Memory_Write_Back_Cacheable);
 
       --
       --  Configure global data region:
@@ -138,7 +139,7 @@ package body CPU.Memory_Protection is
       end Load_Memory_Attributes_Lookup_Table;
 
       TCR_Value : TCR_Type;
-      Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       Translation_Table_Tree : Translation_Table_Tree_Type renames Translation_Table_Trees (Cpu_Id);
    begin
       pragma Assert (Level3_Translation_Table_Entry_Range_Size = Page_Size_In_Bytes);
@@ -230,7 +231,7 @@ package body CPU.Memory_Protection is
       Region_Attributes : Region_Attributes_Type)
    is
       Translation_Table_Tree : Translation_Table_Tree_Type renames
-         Translation_Table_Trees (Get_Cpu_Id);
+         Translation_Table_Trees (CPU.Multicore.Get_Cpu_Id);
    begin
       Populate_Level1_Translation_Table (Translation_Table_Tree,
                                          Start_Virtual_Address,
@@ -241,7 +242,11 @@ package body CPU.Memory_Protection is
       if Region_Attributes = Normal_Memory_Write_Back_Cacheable or else
          Region_Attributes = Normal_Memory_Write_Through_Cacheable
       then
-         CPU.Caches.Invalidate_Data_Cache_Range (Start_Virtual_Address, End_Virtual_Address);
+         if CPU.Caches_Are_Enabled then
+            CPU.Caches.Flush_Invalidate_Data_Cache_Range (Start_Virtual_Address, End_Virtual_Address);
+         else
+            CPU.Caches.Invalidate_Data_Cache_Range (Start_Virtual_Address, End_Virtual_Address);
+         end if;
       end if;
    end Configure_Memory_Region;
 
@@ -309,7 +314,7 @@ package body CPU.Memory_Protection is
    is
       L2_Table_Id : Translation_Table_Id_Type;
    begin
-      if L1_Translation_Table_Entry.Valid_Entry then
+      if L1_Translation_Table_Entry.Valid_Entry = 1 then
          if L1_Translation_Table_Entry.Entry_Kind = Translation_Table_Entry_Is_Block then
             raise Program_Error with "Cannot overwrite existing entry";
          end if;
@@ -429,7 +434,7 @@ package body CPU.Memory_Protection is
    is
       L3_Table_Id : Translation_Table_Id_Type;
    begin
-      if L2_Translation_Table_Entry.Valid_Entry then
+      if L2_Translation_Table_Entry.Valid_Entry = 1 then
          if L2_Translation_Table_Entry.Entry_Kind = Translation_Table_Entry_Is_Block then
             raise Program_Error with "Cannot overwrite existing entry";
          end if;
@@ -524,7 +529,7 @@ package body CPU.Memory_Protection is
       Translation_Table_Entry.Page_Address_Prefix :=
          Address_To_Page_Address_Prefix (Child_Translation_Table_Address);
       Translation_Table_Entry.Entry_Kind := Translation_Table_Entry_Is_Table_Or_Page;
-      Translation_Table_Entry.Valid_Entry := True;
+      Translation_Table_Entry.Valid_Entry := 1;
    end Populate_Translation_Table_Inner_Entry;
 
    procedure Populate_Translation_Table_Leaf_Entry (
@@ -581,10 +586,11 @@ package body CPU.Memory_Protection is
          Address_To_Page_Address_Prefix (Start_Physical_Address);
       Translation_Table_Entry.Attr_Index :=
          Translation_Table_MAIR_EL1_Index_Type (Region_Attributes'Enum_Rep);
-      Translation_Table_Entry.AF := True;
-      Translation_Table_Entry.NS := True;
+      Translation_Table_Entry.AF := 1;
+      Translation_Table_Entry.nG := 0;
+      Translation_Table_Entry.NS := 1;
       Translation_Table_Entry.Entry_Kind := Entry_Kind;
-      Translation_Table_Entry.Valid_Entry := True;
+      Translation_Table_Entry.Valid_Entry := 1;
 
       if Debug_On then
          Print_Translation_Table_Leaf_Entry (Translation_Table_Entry,
@@ -807,6 +813,19 @@ package body CPU.Memory_Protection is
       SCTLR_Value.SA0 := SP_EL0_Alignment_Check_Enabled;
       --  NOTE: We don't set SA, because we never initialize SP_EL1
       --  SCTLR_Value.SA := SP_EL1_Alignment_Check_Enabled;
+
+      --
+      --  NOTE: SPAN needs to be disabled, otherwise exceptions will not work on Cortex-A76.
+      --  Cortex-A72 (ARMv8.0-A) does not support PAN (Privileged Access Never), but
+      --  cortex-A76 (ARMv8.2-A) does and SCTLR_EL1.SPAN is enabled by default.
+      --  When SPAN is enabled, PSTATE.PAN is set when entering an EL1 exception.
+      --  When PSTATE.PAN is enabled, accessing any memory at that is accessible from EL0,
+      --  while running at EL1, will cause memory access fault.
+      --  Since the ISR stack is accessible from EL0 (to support going to EL0 in the reset
+      --  handler), having SPAN enabled will cause the ISR stack not being accessible
+      --  when taking EL1 exceptions.
+      --
+      SCTLR_Value.SPAN := Set_Privileged_Access_Never_Disabled;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);

@@ -18,8 +18,7 @@ park_cpu:
     /*
      * If CPU core 0 and booted from UART, jump back to the UART boot loader:
      */
-    mrs x0, mpidr_el1
-    and x0, x0, #MPIDR_EL1_CPU_ID_MASK
+    GET_CPU_ID x0           // x0 = CPU id
     cbnz x0, 1f
     adr x0, reset_handler
     cmp x0, #UART_BOOT_LOAD_ADDR
@@ -34,9 +33,9 @@ park_cpu:
     msr sctlr_el1, xzr
 
     /*
-     * Jump back to UART boot loader:
+     * Jump back to UART boot loader server:
      */
-    mov x0, #KERNEL8_IMG_BOOT_ADDR
+    mov x0, #DEFAULT_BOOT_ADDR
     br x0
 
     /*

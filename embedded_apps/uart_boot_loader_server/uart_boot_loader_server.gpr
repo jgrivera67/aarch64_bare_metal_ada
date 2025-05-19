@@ -36,7 +36,7 @@ project Uart_Boot_Loader_Server is
           "-lgcc", -- needed for __aeabi_uldivmod
           "-Wl,-Map=" & "../../bin/" & Executable_Prefix & ".map",
 	       "-Xlinker", "--gc-sections",
-	       "-T../../src/memory_layout.ld");
+	       "-T../../memory_layout.ld");
    end Linker;
 
    package Builder is

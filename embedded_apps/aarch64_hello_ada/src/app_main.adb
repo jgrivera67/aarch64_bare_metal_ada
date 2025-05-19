@@ -6,19 +6,20 @@
 --
 
 with Board;
+with CPU;
 with Utils;
 with Interfaces;
 with System.Storage_Elements;
 with GNAT.Source_Info;
 
 procedure App_Main is
-   Code_Address : constant System.Address := Utils.Get_Code_Location_Here;
+   Code_Address : constant System.Address := CPU.Get_Reset_Handler_Address;
 begin
    Utils.Print_String (
-      ASCII.LF & Board.Board_Name & " Hello Ada (built on " &
+      ASCII.LF & Board.Board_Name & " Hello Ada - built on " &
       GNAT.Source_Info.Compilation_Date &
       " at " & GNAT.Source_Info.Compilation_Time &
-      ") from address ");
+      ", boot address ");
    Utils.Print_Number_Hexadecimal (
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);

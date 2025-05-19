@@ -9,7 +9,6 @@
 --  @summary Memory protection services for ARMv8-A MMU
 --
 
-private with CPU.Multicore;
 with Interfaces;
 
 package CPU.Memory_Protection
@@ -73,7 +72,6 @@ is
       with Pre => Cpu_In_Privileged_Mode;
 
 private
-   use CPU.Multicore;
 
    procedure Initialize
       with Pre => Cpu_In_Privileged_Mode and then
@@ -265,13 +263,14 @@ private
          when True =>
             Value : Interfaces.Unsigned_64 := 0;
          when False =>
-            Valid_Entry : Boolean := False;
+            Valid_Entry : Bit_Type := 0;
             Entry_Kind : Translation_Table_Entry_Kind_Type := Translation_Table_Entry_Is_Block;
             Attr_Index : Translation_Table_MAIR_EL1_Index_Type := 0;
-            NS : Boolean := False; --  Non-Secure Access
+            NS : Bit_Type := 0; --  Non-Secure Access
             AP : Access_Permissions_Attribute_Type := EL1_Read_Write_EL0_No_Access;
             SH : Sharability_Attribute_Type := Non_Shareable;
-            AF : Boolean := False; --  Access Flag to mark the entry as hardware-managed
+            AF : Bit_Type := 0; --  Access Flag to mark the entry as hardware-managed
+            nG : Bit_Type := 0; --  not Global
             Page_Address_Prefix : Page_Address_Prefix_Type := 0;
             PXN : Execute_Never_Type := Non_Executable; --  Privileged Execute Never
             UXN : Execute_Never_Type := Non_Executable; --  Unprivileged Execute Never
@@ -292,6 +291,7 @@ private
       AP          at 0 range 6 .. 7;
       SH          at 0 range 8 .. 9;
       AF          at 0 range 10 .. 10;
+      nG          at 0 range 11 .. 11;
       Page_Address_Prefix at 0 range Page_Address_Prefix_Lowest_Bit_Index .. 51;
       PXN         at 0 range 53 .. 53;
       UXN         at 0 range 54 .. 54;
@@ -758,8 +758,8 @@ private
       with Pre => Cpu_In_Privileged_Mode and then
                   Child_Translation_Table_Address /= System.Null_Address and then
                   Address_Is_Page_Aligned (Child_Translation_Table_Address) and then
-                  not Translation_Table_Entry.Valid_Entry,
-           Post => Translation_Table_Entry.Valid_Entry and then
+                  Translation_Table_Entry.Valid_Entry = 0,
+           Post => Translation_Table_Entry.Valid_Entry = 1 and then
                    Translation_Table_Entry.Entry_Kind =
                      Translation_Table_Entry_Is_Table_Or_Page;
 
@@ -778,9 +778,9 @@ private
                          Address_Is_Aligned_To_Level2_Table_Entry_Range (Start_Physical_Address),
                       when TT_Level3 =>
                          Address_Is_Page_Aligned (Start_Physical_Address)) and then
-                  not Translation_Table_Entry.Valid_Entry,
-           Post => Translation_Table_Entry.Valid_Entry and then
-                   Translation_Table_Entry.AF;
+                  Translation_Table_Entry.Valid_Entry = 0,
+           Post => Translation_Table_Entry.Valid_Entry = 1 and then
+                   Translation_Table_Entry.AF = 1;
 
    procedure Print_Translation_Table_Leaf_Entry (
       Translation_Table_Entry : Translation_Table_Entry_Type;

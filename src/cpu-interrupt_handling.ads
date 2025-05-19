@@ -5,7 +5,6 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
-with CPU.Multicore;
 private with Bit_Sized_Integer_Types;
 with System;
 with Interfaces;
@@ -58,7 +57,7 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
       ISR_Stack_Size_In_Bytes /
       (ISR_Stacks_Package.Stack_Entry_Type'Size / System.Storage_Unit);
 
-   ISR_Stacks : array (CPU.Multicore.Cpu_Core_Id_Type) of
+   ISR_Stacks : array (Valid_Cpu_Core_Id_Type) of
       ISR_Stacks_Package.Execution_Stack_Type with
          Linker_Section => ".isr_stacks",
          Convention => C,
@@ -266,7 +265,7 @@ private
       (Interrupt_Nesting.Nesting_Level_To_Stack_Pointer_Map (Interrupt_Nesting.Nesting_Level));
 
    Cpu_To_Interrupt_Nesting :
-      array (CPU.Multicore.Cpu_Core_Id_Type) of Interrupt_Nesting_Type;
+      array (Valid_Cpu_Core_Id_Type) of Interrupt_Nesting_Type;
 
    -----------------------------------------------------------------------------
    --  Cpu Context saved/restored on interrupt entry/exit
