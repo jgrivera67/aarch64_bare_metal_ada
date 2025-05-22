@@ -10,10 +10,22 @@
 --
 with Bit_Sized_Integer_Types;
 private with Board;
+private with CPU;
 with Interfaces;
 with System;
 
 package Uart_Driver is
+
+   Default_Baud_Rate : constant := 115_200;
+
+   type Uart_Rx_Interrupt_Callback_Pointer_Type is
+      access procedure (Arg : System.Address; Byte_Received : Interfaces.Unsigned_8);
+
+   procedure Initialize_Uart (Rx_Interrupt_Callback_Pointer : Uart_Rx_Interrupt_Callback_Pointer_Type;
+                              Rx_Interrupt_Callback_Arg : System.Address;
+                              Baud_Rate : Interfaces.Unsigned_32 := Default_Baud_Rate)
+      with Pre => Rx_Interrupt_Callback_Pointer /= null;
+
    procedure Put_Char (C : Character);
 
    procedure Send_Byte (Byte : Interfaces.Unsigned_8);
@@ -30,6 +42,16 @@ package Uart_Driver is
    function Receive_Byte_If_Any return Maybe_Byte_Type;
 
 private
+
+   use type System.Address;
+
+   procedure Uart_Rx_Interrupt_Handler (Arg : System.Address)
+      with Pre => CPU.Cpu_In_Privileged_Mode and then
+                   Arg /= System.Null_Address;
+
+   ----------------------------------------------------------------------------
+   --  ARM PL011 UART Register declarations
+   ----------------------------------------------------------------------------
 
    --  Data Register.
    type UARTDR_Register is record
@@ -476,5 +498,12 @@ private
    --
    UART0_Periph : UART_Peripheral with
       Import, Address => Board.UART0_Base;
+
+   type Uart_Device_Type is limited record
+      Rx_Interrupt_Callback_Pointer : Uart_Rx_Interrupt_Callback_Pointer_Type := null;
+      Rx_Interrupt_Callback_Arg : System.Address := System.Null_Address;
+   end record;
+
+   Uart_Device : Uart_Device_Type;
 
 end Uart_Driver;

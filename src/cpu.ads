@@ -38,6 +38,8 @@ package CPU is
       Cortex_A76  --  Raspberry PI 5
    );
 
+   Num_External_Interrupts : constant := 480;
+
    function Get_Call_Address return System.Address with
       Inline_Always => False, Suppress => All_Checks;
 

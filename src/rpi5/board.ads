@@ -28,6 +28,8 @@ package Board is
 
    UART0_Base : constant System.Address := System'To_Address (16#10_7d00_1000#);
 
+   Uart_Clock_Frequency_Hz : constant := 44_236_800;
+
    GICD_Base_Address : constant System.Address := System'To_Address (16#10_7fff_9000#);
    GICC_Base_Address : constant System.Address := System'To_Address (16#10_7fff_a000#);
 

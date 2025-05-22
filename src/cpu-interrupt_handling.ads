@@ -6,10 +6,16 @@
 --
 
 private with Bit_Sized_Integer_Types;
+with Interrupt_Controller_Driver;
 with System;
 with Interfaces;
 
 package CPU.Interrupt_Handling with SPARK_Mode => On is
+
+   procedure Initialize with
+     Pre  => Cpu_In_Privileged_Mode and then
+             Cpu_Interrupting_Disabled,
+     Post => not Cpu_Interrupting_Disabled;
 
    function Get_Saved_PC return System.Address;
 
@@ -63,6 +69,28 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
          Convention => C,
          Export,
          External_Name => "isr_stacks";
+
+   -----------------------------------------------------------------------------
+   --  Interrupts
+   -----------------------------------------------------------------------------
+
+   Generic_Virtual_Timer_Interrupt_Id : constant
+      Interrupt_Controller_Driver.Internal_Interrupt_Id_Type := 27;
+
+   UART0_Interrupt_Id : constant
+      Interrupt_Controller_Driver.External_Interrupt_Id_Type := 153;
+
+   use type Interrupt_Controller_Driver.Valid_Interrupt_Priority_Type;
+
+   Interrupt_Priorities : constant
+      array (Interrupt_Controller_Driver.Valid_Interrupt_Id_Type) of
+         Interrupt_Controller_Driver.Interrupt_Priority_Type :=
+      [Generic_Virtual_Timer_Interrupt_Id =>
+         Interrupt_Controller_Driver.Highest_Interrupt_Priority + 1,
+       UART0_Interrupt_Id =>
+         Interrupt_Controller_Driver.Lowest_Interrupt_Priority - 1,
+       others =>
+         Interrupt_Controller_Driver.Lowest_Interrupt_Priority];
 
 private
 

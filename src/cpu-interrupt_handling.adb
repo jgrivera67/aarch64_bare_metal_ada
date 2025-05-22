@@ -9,7 +9,6 @@
 --  @summary HiRTOS to target platform interface for ARMv8-A aarch64 architecture - Interrupt handling
 --
 
---??? with Interrupt_Controller_Driver;
 with CPU.Multicore;
 with Gdb_Server;
 with Utils;
@@ -17,6 +16,12 @@ with System.Machine_Code;
 
 package body CPU.Interrupt_Handling is
    use ASCII;
+
+   procedure Initialize is
+   begin
+      Interrupt_Controller_Driver.Initialize;
+      Enable_Cpu_Interrupting;
+   end Initialize;
 
    procedure Print_Exception_Info (Exception_Description : String) is
       Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
@@ -106,14 +111,14 @@ package body CPU.Interrupt_Handling is
 
    procedure Ada_Handle_EL1_Irq_Interrupt is
    begin
-      --???Interrupt_Controller_Driver.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Irq);
-      null;
+      Interrupt_Controller_Driver.GIC_Interrupt_Handler (
+         Interrupt_Controller_Driver.Cpu_Interrupt_Irq);
    end Ada_Handle_EL1_Irq_Interrupt;
 
    procedure Ada_Handle_EL1_Fiq_Interrupt is
    begin
-      --???Interrupt_Controller_Driver.GIC_Interrupt_Handler (Interrupt_Controller.Cpu_Interrupt_Fiq);
-      null;
+      Interrupt_Controller_Driver.GIC_Interrupt_Handler (
+         Interrupt_Controller_Driver.Cpu_Interrupt_Fiq);
    end Ada_Handle_EL1_Fiq_Interrupt;
 
    procedure Ada_Handle_EL1_SError_Exception is

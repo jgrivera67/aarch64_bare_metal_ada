@@ -92,15 +92,19 @@ For Linux, The PL2303 driver is in the mainline Linux kernel.
 The sequence diagram below shows the boot sequence on the Raspberry PI 4:
 ![](uml_diagrams/raspberrypi4_boot_sequence.png)
 
-The last boot stage loads an image with the name `kerne8l.img` from the SD card.
-Normally, `kernel8.img` is a 64-bit Linux kernel. However, for bare-metal
-development, we are going to copy our bare-metal executable binary (`.bin` file)
-as `kernel8.img` on the SD card.
+The last boot stage loads a kernel image with the name `kernel8.img` (by default)
+from the SD card.
+However, for bare-metal development, instead of `kernel8.img, we will load our
+bare-metal binary. Fo this, we need to add the following to the `config.txt` file:
+
+```
+kernel=<bare-metal .bin file>
+```
 
 For example on MacOS, the SD card is mounted as `/Volumes/bootfs`. So,
 we can copy our binary to the SD card as follows:
 ```
-cp $bin_file /Volumes/bootfs/kernel8.img
+cp $bin_file /Volumes/bootfs
 sync
 ```
 ![](memory_map.drawio.svg)

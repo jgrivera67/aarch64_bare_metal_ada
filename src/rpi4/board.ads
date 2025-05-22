@@ -25,6 +25,8 @@ package Board is
 
    UART0_Base : constant System.Address := System'To_Address (16#fe20_1000#);
 
+   Uart_Clock_Frequency_Hz : constant := 48_000_000; --  48 MHz
+
    GICD_Base_Address : constant System.Address := System'To_Address (16#ff84_1000#);
    GICC_Base_Address : constant System.Address := System'To_Address (16#ff84_2000#);
 

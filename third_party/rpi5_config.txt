@@ -54,5 +54,6 @@ dtoverlay=dwc2,dr_mode=host
 enable_uart=1
 dtparam=uart0=on
 uart_2ndstage=1
-kernel=kernel8.img
+kernel=uart_boot_loader_server.bin
 kernel_address=0x80000
+#armstub=bl31.bin

@@ -9,16 +9,21 @@
 --  @summary ARM generic timer driver
 --
 
+with CPU.Interrupt_Handling;
+with Interrupt_Controller_Driver;
 with System.Machine_Code;
+with System.Storage_Elements;
 
 package body Timer_Driver is
+   use System.Storage_Elements;
+
    procedure Initialize is
-      CNTP_CTL_Value : CNTP_CTL_Type;
+      CNTV_CTL_Value : CNTV_CTL_Type;
    begin
-      CNTP_CTL_Value := Get_CNTV_CTL;
-      CNTP_CTL_Value.ENABLE := Timer_Disabled;
-      CNTP_CTL_Value.IMASK := Timer_Interrupt_Masked;
-      Set_CNTV_CTL (CNTP_CTL_Value);
+      CNTV_CTL_Value := Get_CNTV_CTL;
+      CNTV_CTL_Value.ENABLE := Timer_Disabled;
+      CNTV_CTL_Value.IMASK := Timer_Interrupt_Masked;
+      Set_CNTV_CTL (CNTV_CTL_Value);
 
       --
       --  NOTE: the generic timer interrupt is enabled in the GIC and in the
@@ -27,73 +32,144 @@ package body Timer_Driver is
       --
    end Initialize;
 
-   function Get_CNTP_CTL return CNTP_CTL_Type is
-      CNTP_CTL_Value : CNTP_CTL_Type;
+   procedure Start_Timer (Timer_Interrupt_Callback_Pointer : Timer_Interrupt_Callback_Pointer_Type;
+                          Timer_Interrupt_Callback_Arg : System.Address;
+                          Expiration_Delta_Time_Us : Delta_Time_Us_Type) is
+      CNTV_CTL_Value : CNTV_CTL_Type;
+      CNTV_TVAL_Value : constant Interfaces.Unsigned_64 :=
+         Interfaces.Unsigned_64 (Expiration_Delta_Time_Us) *
+         Get_Timer_Counter_Cycles_Per_Usec;
+      Timer_Interrupt_Id : Interrupt_Controller_Driver.Valid_Interrupt_Id_Type renames
+         CPU.Interrupt_Handling.Generic_Virtual_Timer_Interrupt_Id;
    begin
-      System.Machine_Code.Asm (
-         "mrs %0, cntp_ctl_el0",
-         Outputs => CNTP_CTL_Type'Asm_Output ("=r", CNTP_CTL_Value), --  %0
-         Volatile => True);
+      pragma Assert (CNTV_TVAL_Value >= Interfaces.Unsigned_64 (Expiration_Delta_Time_Us));
 
-      return CNTP_CTL_Value;
-   end Get_CNTP_CTL;
+      Timer_Device.Last_Period_Time_Stamp_Cycles := Get_Timestamp_Cycles;
+      Timer_Device.Interrupt_Callback_Pointer := Timer_Interrupt_Callback_Pointer;
+      Timer_Device.Interrupt_Callback_Arg := Timer_Interrupt_Callback_Arg;
 
-   procedure Set_CNTP_CTL (CNTP_CTL_Value : CNTP_CTL_Type) is
+      --
+      --  Enable tick timer interrupt in the generic timer peripheral:
+      --
+      --  NOTE: Section G8.7.16 of ARMv8 Architecture Reference Manual says:
+      --  "When the value of the ENABLE bit is 1, ISTATUS indicates whether
+      --   the timer condition is met. ISTATUS takes no account of the value
+      --   of the IMASK bit. If the value of ISTATUS is 1 and the value of
+      --   IMASK is 0 then the timer interrupt is asserted.
+      --   Setting the ENABLE bit to 0 disables the timer output signal,
+      --   but the timer value accessible from CNTV_TVAL continues
+      --   to count down. Disabling the output signal might be a power-saving
+      --   option."
+      --
+      Set_CNTV_TVAL (CNTV_TVAL_Value);
+      CNTV_CTL_Value := Get_CNTV_CTL;
+      CNTV_CTL_Value.ENABLE := Timer_Enabled;
+      CNTV_CTL_Value.IMASK := Timer_Interrupt_Not_Masked;
+      Set_CNTV_CTL (CNTV_CTL_Value);
+
+      --  Configure generic virtual timer interrupt in the GIC:
+      Interrupt_Controller_Driver.Configure_Internal_Interrupt (
+         Internal_Interrupt_Id => Timer_Interrupt_Id,
+         Priority => CPU.Interrupt_Handling.Interrupt_Priorities (Timer_Interrupt_Id),
+         Cpu_Interrupt_Line => Interrupt_Controller_Driver.Cpu_Interrupt_Irq,
+         Trigger_Mode => Interrupt_Controller_Driver.Interrupt_Level_Sensitive,
+         Interrupt_Handler_Entry_Point => Timer_Interrupt_Handler'Access,
+         Interrupt_Handler_Arg => To_Address (Integer_Address (CNTV_TVAL_Value)));
+
+      --  Enable generic timer interrupt in the GIC:
+      Interrupt_Controller_Driver.Enable_Internal_Interrupt (Timer_Interrupt_Id);
+   end Start_Timer;
+
+   procedure Stop_Timer is
+      CNTV_CTL_Value : CNTV_CTL_Type;
    begin
-      System.Machine_Code.Asm (
-         "msr cntp_ctl_el0, %0",
-         Inputs => CNTP_CTL_Type'Asm_Input ("r", CNTP_CTL_Value), --  %0
-         Volatile => True);
-   end Set_CNTP_CTL;
+      --  Disable generic timer interrupt in the GIC:
+      Interrupt_Controller_Driver.Disable_Internal_Interrupt (
+         CPU.Interrupt_Handling.Generic_Virtual_Timer_Interrupt_Id);
 
-   function Get_CNTV_CTL return CNTP_CTL_Type is
-      CNTP_CTL_Value : CNTP_CTL_Type;
+      --  Disable tick timer interrupt in the generic timer peipheral:
+      CNTV_CTL_Value := Get_CNTV_CTL;
+      CNTV_CTL_Value.ENABLE := Timer_Disabled;
+      CNTV_CTL_Value.IMASK := Timer_Interrupt_Masked;
+      Set_CNTV_CTL (CNTV_CTL_Value);
+   end Stop_Timer;
+
+   procedure Timer_Interrupt_Handler (Arg : System.Address)
+   is
+      use type Interfaces.Unsigned_32;
+      Timer_Period_Cycles : constant Interfaces.Unsigned_64 :=
+         Interfaces.Unsigned_64 (To_Integer (Arg));
+      Current_Time_Stamp_Cycles : constant Interfaces.Unsigned_64 := Get_Timestamp_Cycles;
+      Expected_Period_Time_Stamp_Cycles : constant Interfaces.Unsigned_64 :=
+         Timer_Device.Last_Period_Time_Stamp_Cycles + Timer_Period_Cycles;
+      Time_Delta_Cycles : constant Interfaces.Unsigned_64 :=
+         Current_Time_Stamp_Cycles - Expected_Period_Time_Stamp_Cycles;
+   begin
+      Timer_Device.Interrupt_Callback_Pointer (Timer_Device.Interrupt_Callback_Arg);
+      declare
+         Timer_Period_Drift_Cycles : constant Interfaces.Unsigned_64 :=
+            (if Time_Delta_Cycles <= Interfaces.Unsigned_64 (Interfaces.Unsigned_32'Last) then
+               Time_Delta_Cycles
+             else
+               Timer_Period_Cycles);
+      begin
+         --
+         --  NOTE: Setting CNTV_TVAL here serves two purposes:
+         --  - Clear the timer interrupt at the timer peripheral
+         --  - Set the timer to fire for the next tick
+         --
+         if Timer_Period_Drift_Cycles = 0 then
+            Timer_Device.Last_Period_Time_Stamp_Cycles := Expected_Period_Time_Stamp_Cycles;
+            Set_CNTV_TVAL (Timer_Period_Cycles);
+         elsif Timer_Period_Drift_Cycles < Timer_Period_Cycles then
+            Timer_Device.Timer_Interrupt_Small_Drift_Count := @ + 1;
+            Timer_Device.Last_Period_Time_Stamp_Cycles := Expected_Period_Time_Stamp_Cycles;
+            Set_CNTV_TVAL (Timer_Period_Cycles - Timer_Period_Drift_Cycles);
+         else
+            Timer_Device.Timer_Interrupt_Big_Drift_Count := @ + 1;
+            Timer_Device.Last_Period_Time_Stamp_Cycles := Current_Time_Stamp_Cycles;
+            Set_CNTV_TVAL (Timer_Period_Cycles);
+         end if;
+      end;
+   end Timer_Interrupt_Handler;
+
+   function Get_CNTV_CTL return CNTV_CTL_Type is
+      CNTV_CTL_Value : CNTV_CTL_Type;
    begin
       System.Machine_Code.Asm (
          "mrs %0, cntv_ctl_el0",
-         Outputs => CNTP_CTL_Type'Asm_Output ("=r", CNTP_CTL_Value), --  %0
+         Outputs => CNTV_CTL_Type'Asm_Output ("=r", CNTV_CTL_Value), --  %0
          Volatile => True);
 
-      return CNTP_CTL_Value;
+      return CNTV_CTL_Value;
    end Get_CNTV_CTL;
 
-   procedure Set_CNTV_CTL (CNTP_CTL_Value : CNTP_CTL_Type) is
+   procedure Set_CNTV_CTL (CNTV_CTL_Value : CNTV_CTL_Type) is
    begin
       System.Machine_Code.Asm (
          "msr cntv_ctl_el0, %0",
-         Inputs => CNTP_CTL_Type'Asm_Input ("r", CNTP_CTL_Value), --  %0
+         Inputs => CNTV_CTL_Type'Asm_Input ("r", CNTV_CTL_Value), --  %0
          Volatile => True);
    end Set_CNTV_CTL;
 
-   function Get_CNTP_TVAL return Interfaces.Unsigned_64 is
-      CNTP_TVAL_Value : Interfaces.Unsigned_64;
+   function Get_CNTV_TVAL return Interfaces.Unsigned_64 is
+      CNTV_TVAL_Value : Interfaces.Unsigned_64;
    begin
       System.Machine_Code.Asm (
-         "mrs %0, cntp_tval_el0",
-         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", CNTP_TVAL_Value), --  %0
+         "mrs %0, cntv_tval_el0",
+         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", CNTV_TVAL_Value), --  %0
          Volatile => True);
 
-      return CNTP_TVAL_Value;
-   end Get_CNTP_TVAL;
+      return CNTV_TVAL_Value;
+   end Get_CNTV_TVAL;
 
-   procedure Set_CNTP_TVAL (CNTP_TVAL_Value : Interfaces.Unsigned_64) is
+   procedure Set_CNTV_TVAL (CNTV_TVAL_Value : Interfaces.Unsigned_64) is
    begin
       System.Machine_Code.Asm (
-         "msr cntp_tval_el0, %0",
-         Inputs => Interfaces.Unsigned_64'Asm_Input ("r", CNTP_TVAL_Value), --  %0
+         "msr cntv_tval_el0, %0",
+         Inputs => Interfaces.Unsigned_64'Asm_Input ("r", CNTV_TVAL_Value), --  %0
          Volatile => True);
-   end Set_CNTP_TVAL;
-
-   function Get_CNTPCT return Interfaces.Unsigned_64 is
-      CNTPCT_Value : Interfaces.Unsigned_64;
-   begin
-      System.Machine_Code.Asm (
-         "mrs %0, cntpct_el0",
-         Outputs => Interfaces.Unsigned_64'Asm_Output ("=r", CNTPCT_Value), --  %0
-         Volatile => True);
-
-      return CNTPCT_Value;
-   end Get_CNTPCT;
+   end Set_CNTV_TVAL;
 
    function Get_CNTVCT return Interfaces.Unsigned_64 is
       CNTVCT_Value : Interfaces.Unsigned_64;
