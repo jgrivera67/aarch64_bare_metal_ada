@@ -3,34 +3,42 @@
 --
 --  SPDX-License-Identifier: Apache-2.0
 --
+with Interfaces;
 with Utils;
-with CPU.Interrupt_Handling;
 with System.Storage_Elements;
 
 package body Gdb_Server is
+   use System.Storage_Elements;
 
-   procedure Run_Gdb_Server is
-      use System.Storage_Elements;
-      Saved_PC : constant System.Address := CPU.Interrupt_Handling.Get_Saved_PC;
+   procedure Run_Gdb_Server (
+      Debug_Event : CPU.Self_Hosted_Debug.Debug_Event_Type;
+      Current_PC : in out System.Address)
+   is
       C : Character;
    begin
-      Utils.Lock_Console (Print_Cpu => True);
-      Utils.Print_String (ASCII.LF & "Running GDB server ..." & ASCII.LF);
-      Utils.Print_String ("GDB server not implemented yet" & ASCII.LF);
-      Utils.Unlock_Console;
+      if not Gdb_Server_Obj.Gdb_Attached then
+         Utils.Lock_Console (Print_Cpu => True);
+         Utils.Print_String (ASCII.LF & "Entering self-hosted debugger on ");
+         Utils.Print_String (Debug_Event'Image);
+         Utils.Print_String (" at PC ");
+         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)),
+                                       End_Line => True);
+         Utils.Unlock_Console;
+         CPU.Self_Hosted_Debug.Enable_Self_Hosted_Debugging;
+      end if;
+
       loop
-         C := Utils.Get_Char;
-         --???
-         if C = ASCII.CR then
-            Utils.Put_Char (ASCII.LF);
-         else
-            Utils.Put_Char (C);
-            exit when C = 'q';
-         end if;
-         --???
+         null;
       end loop;
 
-      CPU.Interrupt_Handling.Set_Saved_PC (
-         To_Address (To_Integer (Saved_PC) + CPU.Instruction_Size_In_Bytes));
+      if not Gdb_Server_Obj.Gdb_Attached then
+         CPU.Self_Hosted_Debug.Disable_Self_Hosted_Debugging;
+         Utils.Lock_Console (Print_Cpu => True);
+         Utils.Print_String (ASCII.LF & "Exiting self-hosted debugger at PC ");
+         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)),
+                                         End_Line => True);
+         Utils.Unlock_Console;
+      end if;
+
    end Run_Gdb_Server;
 end Gdb_Server;

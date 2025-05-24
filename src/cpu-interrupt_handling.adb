@@ -10,7 +10,7 @@
 --
 
 with CPU.Multicore;
-with Gdb_Server;
+with CPU.Self_Hosted_Debug;
 with Utils;
 with System.Machine_Code;
 
@@ -52,14 +52,12 @@ package body CPU.Interrupt_Handling is
       raise Program_Error with Exception_Description;
    end Handle_EL1_Error_Exception;
 
-   procedure Handle_EL1_Debug_Exception (Exception_Description : String) is
+   procedure Handle_EL1_Debug_Exception (
+      Debug_Event : CPU.Self_Hosted_Debug.Debug_Event_Type;
+      Exception_Description : String) is
    begin
       Print_Exception_Info (Exception_Description);
-      if CPU.Multicore.Get_Cpu_Id = CPU.Valid_Cpu_Core_Id_Type'First then
-         Gdb_Server.Run_Gdb_Server;
-      else
-         raise Program_Error with Exception_Description;
-      end if;
+      CPU.Self_Hosted_Debug.Run_Debugger (Debug_Event);
    end Handle_EL1_Debug_Exception;
 
    procedure Ada_Handle_EL1_Synchronous_Exception is
@@ -91,19 +89,26 @@ package body CPU.Interrupt_Handling is
          when ESR_EL1_EC_Trapped_Floating_Point_Exception =>
             Handle_EL1_Error_Exception ("Trapped Floating Point Exception");
          when ESR_EL1_EC_Breakpoint_Lower_EL =>
-            Handle_EL1_Debug_Exception ("Hardware Breakpoint at Lower Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Hardware_Breakpoint_Event,
+                                        "Hardware Breakpoint at Lower Exception Level");
          when ESR_EL1_EC_Breakpoint_Current_EL =>
-            Handle_EL1_Debug_Exception ("Breakpoint at Current Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Hardware_Breakpoint_Event,
+                                        "Hardware Breakpoint at Current Exception Level");
          when ESR_EL1_EC_Software_Step_Exception_Lower_EL =>
-            Handle_EL1_Debug_Exception ("Software Step Exception at Lower Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Single_Step_Event,
+                                        "Software Step Exception at Lower Exception Level");
          when ESR_EL1_EC_Software_Step_Exception_Current_EL =>
-            Handle_EL1_Debug_Exception ("Software Step Exception at Current Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Single_Step_Event,
+                                        "Software Step Exception at Current Exception Level");
          when ESR_EL1_EC_Watchpoint_Lower_EL =>
-            Handle_EL1_Debug_Exception ("Watchpoint at Lower Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Watchpoint_Event,
+                                        "Watchpoint at Lower Exception Level");
          when ESR_EL1_EC_Watchpoint_Current_EL =>
-            Handle_EL1_Debug_Exception ("Watchpoint at Current Exception Level");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Watchpoint_Event,
+                                        "Watchpoint at Current Exception Level");
          when ESR_EL1_EC_BRK_Instruction_In_Aarch64 =>
-            Handle_EL1_Debug_Exception ("BRK Instruction in AArch64 Exception");
+            Handle_EL1_Debug_Exception (CPU.Self_Hosted_Debug.Software_Breakpoint_Event,
+                                        "BRK Instruction in AArch64 Exception");
          when others =>
             Handle_EL1_Error_Exception ("Other Synchronous Error Exception");
       end case;
