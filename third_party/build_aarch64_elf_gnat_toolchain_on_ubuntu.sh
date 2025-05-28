@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Recipe for building and installing a GNAT capable GCC cross-compiler from `x86-64-linux-elf`
-# to `i686-elf` from source.
+# to `aarch64-elf` from source.
 
 # The target triplet for the build.
 export BUILD_TARGET="aarch64-elf"
@@ -10,7 +10,7 @@ export BUILD_PREFIX="${HOME}/opt/cross/${BUILD_TARGET}"
 
 export HOST="x86_64-pc-linux-gnu"
 
-export PATH=/opt/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-elf/bin:$HOME/.local/share/alire/toolchains/gnat_native_14.2.1_06bb3def/bin:$PATH
+export PATH=$HOME/.local/share/alire/toolchains/gnat_native_14.2.1_06bb3def/bin:$PATH
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/mpc/lib
 
@@ -33,13 +33,23 @@ concurrency=8
 # Adjust this as necessary for the target system.
 local_lib_dir="/usr/local"
 
-gcc_version=14.2.0
+if [ $# != 1 ]; then
+	echo "$0 <directory containing gcc-xx.x.x and bin-utils-x.xx directories>"
+	exit 1
+fi
+
+source_dir=$1
+#gcc_version=15.1.0
+gcc_version=14.3.0
 gcc_dir="gcc-${gcc_version}"
-source_dir=$PWD
 build_dir=${source_dir}/build
 
 binutils_version=2.44
 binutils_dir="binutils-${binutils_version}"
+
+if [[ ! -d "${build_dir}" ]]; then
+	mkdir -p "${build_dir}" || exit 1
+fi
 
 echo "*****************************************************************"
 echo "Step 1: Build binutils"
@@ -53,7 +63,7 @@ fi
 
 cd "${build_dir}/${binutils_dir}" || exit 1
 
-${source_dir}/${binutils_dir}/configure          \
+${source_dir}/${binutils_dir}/configure      \
 	--target="${BUILD_TARGET}"               \
 	--prefix="${BUILD_PREFIX}"               \
 	--host="${HOST}"                         \
@@ -79,7 +89,7 @@ fi
 
 cd "${build_dir}/${gcc_dir}" || exit 1
 
-${source_dir}/configure          \
+${source_dir}/${gcc_dir}/configure      \
 	--target="${BUILD_TARGET}"          \
 	--prefix="${BUILD_PREFIX}"          \
 	--enable-languages="c"              \
@@ -106,7 +116,7 @@ fi
 
 cd "${build_dir}/${gcc_dir}" || exit 1
 
-${source_dir}/configure          \
+${source_dir}/${gcc_dir}/configure      \
 	--target="${BUILD_TARGET}"          \
 	--prefix="${BUILD_PREFIX}"          \
 	--enable-languages="c,c++,ada"      \

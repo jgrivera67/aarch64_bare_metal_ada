@@ -11,6 +11,7 @@ with CPU.Interrupt_Handling;
 with CPU.Self_Hosted_Debug;
 with Utils;
 with System;
+private with CPU.Multicore;
 private with System.Storage_Elements;
 with Interfaces;
 
@@ -91,6 +92,12 @@ private
    end record;
 
    Gdb_Server_Objects : array (CPU.Valid_Cpu_Core_Id_Type) of Gdb_Server_Type;
+
+   --
+   --  NOTE: Only one CPU core can be running its GDB server at a time, since
+   --  they all share the same UART to communicate with the GDB client.
+   --
+   Gdb_Server_Uart_Spinlock : CPU.Multicore.Spinlock_Type;
 
    type Gdb_Cpu_Register_Id_Type is (Gdb_X0, Gdb_X1,
                                      Gdb_X2, Gdb_X3,

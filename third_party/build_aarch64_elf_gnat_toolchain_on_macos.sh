@@ -8,7 +8,7 @@ export BUILD_TARGET="aarch64-elf"
 # The install prefix.
 export BUILD_PREFIX="${HOME}/opt/cross/${BUILD_TARGET}"
 
-export PATH=/Applications/ArmGNUToolchain/14.2.rel1/aarch64-none-elf/bin:/opt/gcc-14.2.0-3-aarch64/bin:$PATH
+export PATH=$HOME/.local/share/alire/toolchains/gnat_native_14.2.1_cc5517d6/bin:$PATH
 
 # The host target triplet.
 #??? export HOST="aarch64-apple-darwin23-gcc"
@@ -29,13 +29,22 @@ concurrency=8
 # Adjust this as necessary for the target system.
 local_lib_dir="/usr/local"
 
-gcc_version=14.2.0
+if [ $# != 1 ]; then
+	echo "$0 <directory containing gcc-xx.x.x and bin-utils-x.xx directories>"
+	exit 1
+fi
+
+source_dir=$1
+gcc_version=14.3.0
 gcc_dir="gcc-${gcc_version}"
-source_dir=$PWD
 build_dir=${source_dir}/build
 
 binutils_version=2.44
 binutils_dir="binutils-${binutils_version}"
+
+if [[ ! -d "${build_dir}" ]]; then
+	mkdir -p "${build_dir}" || exit 1
+fi
 
 echo "*****************************************************************"
 echo "Step 1: Build binutils"

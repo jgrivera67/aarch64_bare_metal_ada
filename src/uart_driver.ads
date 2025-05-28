@@ -30,6 +30,8 @@ package Uart_Driver is
 
    procedure Send_Byte (Byte : Interfaces.Unsigned_8);
 
+   procedure Flush_Output;
+
    function Get_Char return Character;
 
    function Receive_Byte return Interfaces.Unsigned_8;

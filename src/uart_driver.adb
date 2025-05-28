@@ -141,6 +141,15 @@ package body Uart_Driver is
       UART0_Periph.UARTDR := UARTDR_Value;
    end Send_Byte;
 
+   procedure Flush_Output is
+      UARTFR_Value : UARTFR_Register;
+   begin
+      loop
+         UARTFR_Value := UART0_Periph.UARTFR;
+         exit when UARTFR_Value.TXFE = 1;
+      end loop;
+   end Flush_Output;
+
    function Get_Char return Character is
       (Character'Val (Receive_Byte));
 

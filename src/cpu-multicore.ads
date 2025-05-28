@@ -89,7 +89,7 @@ private
       --  Ticket number to be assigned to the next caller of spinlock_acquire()
       Next_Ticket : Atomic_Counter_Type;
       --  Ticket number assigned to the current owner of the spinlock
-      Now_Serving : Cpu_Register_Type := 0 with Volatile_Full_Access;
+      Now_Serving : Cpu_Register_Type := 0 with Atomic;
       --  CPU interrupt mask before interrupts were disabled when acquiring the spinlock.
       Old_Cpu_Interrupting : Cpu_Register_Type := 0;
       --  Inter-cluster CPU core ID

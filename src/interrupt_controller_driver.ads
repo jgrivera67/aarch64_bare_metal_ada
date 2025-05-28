@@ -745,7 +745,7 @@ private
       Per_Cpu_Initialized_Flags    : CPU.Multicore.Atomic_Counter_Type;
       GIC_Distributor_Initialized  : Boolean := False with Volatile;
       Max_Number_Interrupt_Sources : Interfaces.Unsigned_16;
-      Spinlock : CPU.Multicore.Spinlock_Type;
+      Spinlock                     : CPU.Multicore.Spinlock_Type;
       Internal_Interrupt_Handlers  : Internal_Interrupt_Handler_Array_Type;
       External_Interrupt_Handlers  : External_Interrupt_Handler_Array_Type;
    end record;

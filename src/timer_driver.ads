@@ -146,6 +146,6 @@ private
       Timer_Interrupt_Big_Drift_Count : Interfaces.Unsigned_32 := 0;
    end record;
 
-   Timer_Device : Timer_Device_Type;
+   Timer_Devices : array (CPU.Valid_Cpu_Core_Id_Type) of Timer_Device_Type;
 
 end Timer_Driver;

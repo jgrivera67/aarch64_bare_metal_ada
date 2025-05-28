@@ -11,7 +11,6 @@
 --  https://sourceware.org/gdb/onlinedocs/gdb/Packets.html
 --
 
-with CPU.Multicore;
 with Utils.Number_Conversion;
 
 package body Gdb_Server is
@@ -21,11 +20,16 @@ package body Gdb_Server is
 
    procedure Run_Gdb_Server (
       Debug_Event : CPU.Self_Hosted_Debug.Debug_Event_Type;
-      Current_PC : in out System.Address) is
+      Current_PC : in out System.Address)
+   is
       Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       Gdb_Server_Obj : Gdb_Server_Type renames Gdb_Server_Objects (Cpu_Id);
       Data_Last_Index : Valid_Gdb_Packet_Data_Index_Type;
    begin
+      if CPU.Mmu_Is_Enabled then
+         CPU.Multicore.Spinlock_Acquire (Gdb_Server_Uart_Spinlock);
+      end if;
+
       if Gdb_Server_Obj.Gdb_Attached then
          --  Tell the GDB client that the target is halted at a debug exception:
          Send_Gdb_Stop_Reply_Packet (Gdb_Server_Obj);
@@ -62,6 +66,10 @@ package body Gdb_Server is
          Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)),
                                          End_Line => True);
          Utils.Unlock_Console;
+      end if;
+
+      if CPU.Mmu_Is_Enabled then
+         CPU.Multicore.Spinlock_Release (Gdb_Server_Uart_Spinlock);
       end if;
    end Run_Gdb_Server;
 

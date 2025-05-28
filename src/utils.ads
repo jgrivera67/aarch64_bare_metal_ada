@@ -20,6 +20,9 @@ package Utils is
    procedure Print_Number_Hexadecimal (Value : Interfaces.Unsigned_64;
                                        End_Line : Boolean := False);
 
+   procedure Print_Number_Hexadecimal (Value : Interfaces.Unsigned_8;
+                                       End_Line : Boolean := False);
+
    function Receive_Byte_With_Timeout (Timeout_Usec : Interfaces.Unsigned_64)
       return Uart_Driver.Maybe_Byte_Type;
 

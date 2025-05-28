@@ -10,6 +10,7 @@
 --
 
 with CPU.Interrupt_Handling;
+with CPU.Multicore;
 with Interrupt_Controller_Driver;
 with System.Machine_Code;
 with System.Storage_Elements;
@@ -35,6 +36,8 @@ package body Timer_Driver is
    procedure Start_Timer (Timer_Interrupt_Callback_Pointer : Timer_Interrupt_Callback_Pointer_Type;
                           Timer_Interrupt_Callback_Arg : System.Address;
                           Expiration_Delta_Time_Us : Delta_Time_Us_Type) is
+      Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Timer_Device : Timer_Device_Type renames Timer_Devices (Cpu_Id);
       CNTV_CTL_Value : CNTV_CTL_Type;
       CNTV_TVAL_Value : constant Interfaces.Unsigned_64 :=
          Interfaces.Unsigned_64 (Expiration_Delta_Time_Us) *
@@ -97,6 +100,8 @@ package body Timer_Driver is
    procedure Timer_Interrupt_Handler (Arg : System.Address)
    is
       use type Interfaces.Unsigned_32;
+      Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Timer_Device : Timer_Device_Type renames Timer_Devices (Cpu_Id);
       Timer_Period_Cycles : constant Interfaces.Unsigned_64 :=
          Interfaces.Unsigned_64 (To_Integer (Arg));
       Current_Time_Stamp_Cycles : constant Interfaces.Unsigned_64 := Get_Timestamp_Cycles;

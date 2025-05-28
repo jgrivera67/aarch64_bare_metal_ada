@@ -52,6 +52,16 @@ package body Utils is
       Print_String (Str, End_Line);
    end Print_Number_Hexadecimal;
 
+   procedure Print_Number_Hexadecimal (Value : Interfaces.Unsigned_8;
+                                       End_Line : Boolean := False)
+   is
+      Str : String (1 .. 4);
+   begin
+      Str (1 .. 2) := "0x";
+      Utils.Number_Conversion.Unsigned_To_Hexadecimal_String (Value, Str (3 .. 4));
+      Print_String (Str, End_Line);
+   end Print_Number_Hexadecimal;
+
    procedure Copy_String (Dest : out String;
                           Source : String;
                           Cursor_Index : in out Positive) is
@@ -83,6 +93,7 @@ package body Utils is
          return;
       end if;
 
+      Uart_Driver.Flush_Output;
       CPU.Multicore.Spinlock_Release (Console_Spinlock);
    end Unlock_Console;
 

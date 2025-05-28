@@ -46,13 +46,16 @@ laptop to the Raspberry PI's UART0 serial port.
 - Download latest binutils sources: https://www.gnu.org/software/binutils/
 
 ### Building gnat cross-compiler for bare-metal AArch64
-Follow the steps described in https://wiki.osdev.org/GNAT_Cross-Compiler, making corresponding changes fro AArch64:
+Follow the steps described in https://wiki.osdev.org/GNAT_Cross-Compiler, making corresponding changes for AArch64:
 
 - Example for building on MacOS
-Run script [build_aarch64_elf_gnat_toolchain_on_macos.sh](./third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh)
+Run script [build_aarch64_elf_gnat_toolchain_on_macos.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh)
 
 - Example for building on Ubuntu Linux
-Run script [build_aarch64_elf_gnat_toolchain_on_macos.sh](./third_party/build_aarch64_elf_gnat_toolchain_on_ubuntu.sh)
+Run script [build_aarch64_elf_gnat_toolchain_on_ubuntu.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_ubuntu.sh)
+
+A recent native gnat compiler is neeeded to build the cross-compiler. One way to get one is through
+the `alr toolchain --select` command. This command installs gnat compilers at `~/.local/share/alire/toolchains/gnat_native_*
 
 <a id="section_4"></a>
 ## Setting up Raspberry PI board for bare-metal development
