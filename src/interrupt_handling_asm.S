@@ -106,7 +106,7 @@ interrupt_vector_table:
        * Save general-purpose registers on the stack:
        *
        * NOTE: SP does not need to be saved here,
-       * as it is saved in the interrupted task's TCB.
+       * as it is saved by the calling code.
        */
       stp x0, x1, [sp, #-16]!
       stp x2, x3, [sp, #-16]!

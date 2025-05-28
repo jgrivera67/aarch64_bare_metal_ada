@@ -12,7 +12,7 @@
 with CPU.Multicore;
 private with Board;
 private with Bit_Sized_Integer_Types;
-private with Utils;
+private with Utils.Bit_Manipulation;
 private with Interfaces;
 with System;
 
@@ -752,10 +752,11 @@ private
 
    Interrupt_Controller_Obj : Interrupt_Controller_Type;
 
+   use Utils.Bit_Manipulation;
    use type CPU.Cpu_Register_Type;
 
    function Per_Cpu_Initialized return Boolean is
      ((CPU.Multicore.Atomic_Load (Interrupt_Controller_Obj.Per_Cpu_Initialized_Flags) and
-       Utils.Bit_Mask (Utils.Bit_Index_Type (CPU.Multicore.Get_Cpu_Id))) /= 0);
+       Bit_Mask (Bit_Index_Type (CPU.Multicore.Get_Cpu_Id))) /= 0);
 
 end Interrupt_Controller_Driver;

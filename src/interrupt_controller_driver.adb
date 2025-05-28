@@ -45,6 +45,7 @@ is
             pragma Assert (
                Max_Number_Interrupt_Sources <= Interfaces.Unsigned_16 (Max_Num_Interrupts_Supported));
          else
+            Utils.Print_String ("*** GICD_TYPER.ITLinesNumber is 0" & ASCII.LF); --???
             Max_Number_Interrupt_Sources := Max_Num_Interrupts_Supported;
          end if;
 
@@ -128,7 +129,7 @@ is
 
       Old_Flags :=
          CPU.Multicore.Atomic_Fetch_Or (Interrupt_Controller_Obj.Per_Cpu_Initialized_Flags,
-                                        Utils.Bit_Mask (Utils.Bit_Index_Type (Cpu_Id)));
+                                        Bit_Mask (Bit_Index_Type (Cpu_Id)));
    end Initialize;
 
    procedure Configure_Internal_Interrupt
@@ -438,7 +439,7 @@ is
       GICD_SGIR_Value : GICD_SGIR_Type;
    begin
       GICD_SGIR_Value.Target_List :=
-         GICD_SGIR_Target_List_Type (Utils.Bit_Mask (Utils.Bit_Index_Type (Cpu_Id)));
+         GICD_SGIR_Target_List_Type (Bit_Mask (Bit_Index_Type (Cpu_Id)));
       GICD_SGIR_Value.INTID := SGI_INTID_Type (Soft_Gen_Interrupt_Id);
       GICD.GICD_SGIR := GICD_SGIR_Value;
    end Trigger_Software_Generated_Interrupt;

@@ -13,19 +13,31 @@ package CPU.Self_Hosted_Debug with SPARK_Mode => On is
 
    type Num_Watchpoints_Type is range 0 .. Max_Num_Watchpoints;
 
-   type Self_Hosted_Debug_Capabilities_Type is record
+   type Capabilities_Type is record
       Num_Hardware_Breakpoints : Num_Hardware_Breakpoints_Type;
       Num_Watchpoints : Num_Watchpoints_Type;
    end record;
 
-   type Hardware_Breakpoint_Id_Type is range 0 .. Num_Hardware_Breakpoints_Type'Last - 1;
+   type Hardware_Breakpoint_Id_Type is range 0 .. Num_Hardware_Breakpoints_Type'Last;
 
-   type Watchpoint_Id_Type is range 0 .. Num_Watchpoints_Type'Last - 1;
+   subtype Valid_Hardware_Breakpoint_Id_Type is Hardware_Breakpoint_Id_Type range
+       Hardware_Breakpoint_Id_Type'First .. Hardware_Breakpoint_Id_Type'Last - 1;
+
+   Invalid_Hardware_Breakpoint_Id : constant Hardware_Breakpoint_Id_Type :=
+      Hardware_Breakpoint_Id_Type'Last;
+
+   type Watchpoint_Id_Type is range 0 .. Num_Watchpoints_Type'Last;
+
+   subtype Valid_Watchpoint_Id_Type is Watchpoint_Id_Type range
+       Watchpoint_Id_Type'First .. Watchpoint_Id_Type'Last - 1;
+
+   Invalid_Watchpoint_Id : constant Watchpoint_Id_Type := Watchpoint_Id_Type'Last;
 
    type Debug_Event_Type is (Hardware_Breakpoint_Event,
                              Software_Breakpoint_Event,
                              Watchpoint_Event,
-                             Single_Step_Event);
+                             Single_Step_Event,
+                             Dummy_Debug_Event);
 
    procedure Run_Debugger (Debug_Event : Debug_Event_Type)
       with Pre => Cpu_In_Privileged_Mode and then
@@ -41,7 +53,7 @@ package CPU.Self_Hosted_Debug with SPARK_Mode => On is
       Enabled : Boolean := False;
    end record;
 
-   function Get_Self_Hosted_Debug_Capabilities return Self_Hosted_Debug_Capabilities_Type;
+   function Get_Self_Hosted_Debug_Capabilities return Capabilities_Type;
 
    procedure Enable_Self_Hosted_Debugging with
       Pre => Cpu_In_Privileged_Mode and then
@@ -231,11 +243,11 @@ private
       BT at 0 range 20 .. 23;
    end record;
 
-   function Get_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type)
+   function Get_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type)
       return DBGBCRx_EL1_Type with
       Pre => Cpu_In_Privileged_Mode;
 
-   procedure Set_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type;
+   procedure Set_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type;
                               DBGBCRx_EL1_Value : DBGBCRx_EL1_Type) with
       Pre => Cpu_In_Privileged_Mode;
 
@@ -245,11 +257,11 @@ private
 
    type DBGBVRx_EL1_Type is new Interfaces.Unsigned_64;
 
-   function Get_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type)
+   function Get_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type)
       return DBGBVRx_EL1_Type with
       Pre => Cpu_In_Privileged_Mode;
 
-   procedure Set_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type;
+   procedure Set_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type;
                               DBGBVRx_EL1_Value : DBGBVRx_EL1_Type) with
       Pre => Cpu_In_Privileged_Mode;
 
@@ -327,11 +339,11 @@ private
       WT at 0 range 20 .. 20;
    end record;
 
-   function Get_DBGWCRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type)
+   function Get_DBGWCRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type)
       return DBGWCRx_EL1_Type with
       Pre => Cpu_In_Privileged_Mode;
 
-   procedure Set_DBGWCRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type;
+   procedure Set_DBGWCRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type;
                               DBGWCRx_EL1_Value : DBGWCRx_EL1_Type) with
       Pre => Cpu_In_Privileged_Mode;
 
@@ -341,11 +353,11 @@ private
 
    type DBGWVRx_EL1_Type is new Interfaces.Unsigned_64;
 
-   function Get_DBGWVRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type)
+   function Get_DBGWVRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type)
       return DBGWVRx_EL1_Type with
       Pre => Cpu_In_Privileged_Mode;
 
-   procedure Set_DBGWVRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type;
+   procedure Set_DBGWVRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type;
                               DBGWVRx_EL1_Value : DBGWVRx_EL1_Type) with
       Pre => Cpu_In_Privileged_Mode;
 

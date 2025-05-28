@@ -21,6 +21,8 @@ package CPU is
 
    Page_Size_In_Bytes : constant := 4_096;
 
+   Stack_Alignment_In_Bytes : constant := 16;
+
    Num_Cpu_Cores : constant := 4;
 
    type Cpu_Core_Id_Type is range 0 .. Num_Cpu_Cores;
@@ -77,6 +79,10 @@ package CPU is
    function Count_Leading_Zeros (Value : Cpu_Register_Type) return Cpu_Register_Type with
       Post => Count_Leading_Zeros'Result <= Cpu_Register_Type'Size,
       Inline_Always, Suppress => All_Checks;
+
+   function Cpu_Running_In_Little_Endian return Boolean;
+
+   function Convert_To_Big_Endian (Value : Cpu_Register_Type) return Cpu_Register_Type;
 
    -----------------------------------------------------------------------------
    --  Execution stack type declarations

@@ -41,5 +41,4 @@ package Bit_Sized_Integer_Types with No_Elaboration_Code_All is
 
    type Twenty_Seven_Bits_Type is mod 2 ** 27
      with Size => 27;
-
 end Bit_Sized_Integer_Types;

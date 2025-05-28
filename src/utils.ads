@@ -4,9 +4,8 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
-with CPU;
 with Uart_Driver;
-with System;
+with System.Storage_Elements;
 with Interfaces;
 
 package Utils is
@@ -30,26 +29,15 @@ package Utils is
 
    procedure Unlock_Console;
 
-   -----------------------------------------------------------------------------
-   --  Bit manipulation utilities
-   -----------------------------------------------------------------------------
+   procedure Copy_String (Dest : out String;
+                          Source : String;
+                          Cursor_Index : in out Positive)
+      with Pre => Cursor_Index in Dest'Range,
+           Post => Cursor_Index = Cursor_Index'Old + Source'Length and then
+                   Cursor_Index in Dest'Range;
 
-   use CPU;
-
-   type Bit_Index_Type is mod Cpu_Register_Type'Size;
-
-   function Bit_Mask (Bit_Index : Bit_Index_Type) return Cpu_Register_Type is
-    (Cpu_Register_Type (2 ** Natural (Bit_Index)));
-
-   function Is_Value_Power_Of_Two (Value : Cpu_Register_Type) return Boolean is
-      (Value /= 0 and then
-       (Value and (Value - 1)) = 0);
-
-   subtype Log_Base_2_Type is Natural range 0 .. Natural (Bit_Index_Type'Last);
-
-   function Get_Log_Base_2 (Value : Cpu_Register_Type) return Log_Base_2_Type
-      with Pre => Is_Value_Power_Of_Two (Value) and then
-                  Value <= Cpu_Register_Type'Last;
+   type Byte_Array_Type is
+      array (System.Storage_Elements.Integer_Address range <>) of Interfaces.Unsigned_8;
 
 private
 
@@ -58,8 +46,5 @@ private
           Export,
           Convention => C,
           External_Name => "__gnat_last_chance_handler";
-
-   function Get_Log_Base_2 (Value : Cpu_Register_Type) return Log_Base_2_Type is
-      (Log_Base_2_Type'Last - Log_Base_2_Type (CPU.Count_Leading_Zeros (Value)));
 
 end Utils;

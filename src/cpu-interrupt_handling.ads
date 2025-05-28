@@ -47,6 +47,52 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
       Pre => Cpu_In_Privileged_Mode,
       Post => not Cpu_Interrupting_Disabled;
 
+   function Cpu_In_Interrupt_Context return Boolean;
+
+   -----------------------------------------------------------------------------
+   --  Cpu Context saved/restored on interrupt entry/exit
+   -----------------------------------------------------------------------------
+
+   --
+   --  CPU integer registers
+   --
+   --  NOTE: The order of registers in this enumerated type must match the order
+   --  in which CPU registers are stored in the stack when entering an ISR
+   --  (pushed in reverse order and popped in this order).
+   --
+   type Cpu_Register_Id_Type is (ELR_ELx, SPSR_ELx,
+                                 X30_Or_LR, SP,
+                                 X28, X29_Or_FP,
+                                 X26, X27,
+                                 X24, X25,
+                                 X22, X23,
+                                 X20, X21,
+                                 X18, X19,
+                                 X16, X17,
+                                 X14, X15,
+                                 X12, X13,
+                                 X10, X11,
+                                 X8, X9,
+                                 X6, X7,
+                                 X4, X5,
+                                 X2, X3,
+                                 X0, X1);
+
+   type Cpu_Register_Array_Type is array (Cpu_Register_Id_Type) of Cpu_Register_Type;
+
+   type Cpu_Context_Type is record
+      Registers : Cpu_Register_Array_Type;
+   end record
+      with Convention => C;
+
+   for Cpu_Context_Type use record
+      Registers at 16#00# range 0 .. (64 * Cpu_Register_Array_Type'Length) - 1;
+   end record;
+
+   pragma Compile_Time_Error (
+      (Cpu_Context_Type'Size / System.Storage_Unit) mod CPU.Stack_Alignment_In_Bytes /= 0,
+      "Cpu_Context_Type has the wrong size");
+
    -----------------------------------------------------------------------------
    --  ISR stacks
    -----------------------------------------------------------------------------
@@ -77,8 +123,13 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
    Generic_Virtual_Timer_Interrupt_Id : constant
       Interrupt_Controller_Driver.Internal_Interrupt_Id_Type := 27;
 
+   use type Interrupt_Controller_Driver.External_Interrupt_Id_Type;
+
    UART0_Interrupt_Id : constant
-      Interrupt_Controller_Driver.External_Interrupt_Id_Type := 153;
+      Interrupt_Controller_Driver.External_Interrupt_Id_Type :=
+         --  Value taken from device tree (third_party/bcm2712_rpi5.dts and
+         --  third_party/bcm2711_rpi4_b.dts)
+         Interrupt_Controller_Driver.External_Interrupt_Id_Type'First + 16#79#;
 
    use type Interrupt_Controller_Driver.Valid_Interrupt_Priority_Type;
 
@@ -91,6 +142,15 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
          Interrupt_Controller_Driver.Lowest_Interrupt_Priority - 1,
        others =>
          Interrupt_Controller_Driver.Lowest_Interrupt_Priority];
+
+      type Interrupt_Nesting_Type is private;
+
+      function Get_Cpu_Interrupt_Nesting (Cpu_Id : Valid_Cpu_Core_Id_Type)
+         return Interrupt_Nesting_Type;
+
+      function Get_Interrupt_Nesting_Stack_Pointer (
+         Interrupt_Nesting : Interrupt_Nesting_Type)
+         return System.Address;
 
 private
 
@@ -287,91 +347,15 @@ private
       (Interrupt_Nesting : in out Interrupt_Nesting_Type)
       with Inline_Always;
 
-   function Get_Interrupt_Nesting_Stack_Pointer
-      (Interrupt_Nesting : Interrupt_Nesting_Type)
+   function Get_Interrupt_Nesting_Stack_Pointer (Interrupt_Nesting : Interrupt_Nesting_Type)
       return System.Address is
       (Interrupt_Nesting.Nesting_Level_To_Stack_Pointer_Map (Interrupt_Nesting.Nesting_Level));
 
    Cpu_To_Interrupt_Nesting :
       array (Valid_Cpu_Core_Id_Type) of Interrupt_Nesting_Type;
 
-   -----------------------------------------------------------------------------
-   --  Cpu Context saved/restored on interrupt entry/exit
-   -----------------------------------------------------------------------------
-
-   type Cpu_Context_Type is record
-      PC : Cpu_Register_Type;   --  ELR_ELx
-      SPSR : Cpu_Register_Type; --  SPSR_ELx
-      X0 : Cpu_Register_Type;
-      X1 : Cpu_Register_Type;
-      X2 : Cpu_Register_Type;
-      X3 : Cpu_Register_Type;
-      X4 : Cpu_Register_Type;
-      X5 : Cpu_Register_Type;
-      X6 : Cpu_Register_Type;
-      X7 : Cpu_Register_Type;
-      X8 : Cpu_Register_Type;
-      X9 : Cpu_Register_Type;
-      X10 : Cpu_Register_Type;
-      X11 : Cpu_Register_Type;
-      X12 : Cpu_Register_Type;
-      X13 : Cpu_Register_Type;
-      X14 : Cpu_Register_Type;
-      X15 : Cpu_Register_Type;
-      X16 : Cpu_Register_Type;
-      X17 : Cpu_Register_Type;
-      X18 : Cpu_Register_Type;
-      X19 : Cpu_Register_Type;
-      X20 : Cpu_Register_Type;
-      X21 : Cpu_Register_Type;
-      X22 : Cpu_Register_Type;
-      X23 : Cpu_Register_Type;
-      X24 : Cpu_Register_Type;
-      X25 : Cpu_Register_Type;
-      X26 : Cpu_Register_Type;
-      X27 : Cpu_Register_Type;
-      X28 : Cpu_Register_Type;
-      X29 : Cpu_Register_Type; --  FP
-      X30 : Cpu_Register_Type; --  LR
-      Reserved : Cpu_Register_Type; --  Needed for 16-byte alignment
-   end record
-      with Convention => C;
-
-   for Cpu_Context_Type use record
-      PC  at 16#00# range 0 .. 63;
-      SPSR at 16#08# range 0 .. 63;
-      X0  at 16#10# range 0 .. 63;
-      X1  at 16#18# range 0 .. 63;
-      X2  at 16#20# range 0 .. 63;
-      X3  at 16#28# range 0 .. 63;
-      X4  at 16#30# range 0 .. 63;
-      X5  at 16#38# range 0 .. 63;
-      X6  at 16#40# range 0 .. 63;
-      X7  at 16#48# range 0 .. 63;
-      X8  at 16#50# range 0 .. 63;
-      X9  at 16#58# range 0 .. 63;
-      X10 at 16#60# range 0 .. 63;
-      X11 at 16#68# range 0 .. 63;
-      X12 at 16#70# range 0 .. 63;
-      X13 at 16#78# range 0 .. 63;
-      X14 at 16#80# range 0 .. 63;
-      X15 at 16#88# range 0 .. 63;
-      X16 at 16#90# range 0 .. 63;
-      X17 at 16#98# range 0 .. 63;
-      X18 at 16#a0# range 0 .. 63;
-      X19 at 16#a8# range 0 .. 63;
-      X20 at 16#b0# range 0 .. 63;
-      X21 at 16#b8# range 0 .. 63;
-      X22 at 16#c0# range 0 .. 63;
-      X23 at 16#c8# range 0 .. 63;
-      X24 at 16#d0# range 0 .. 63;
-      X25 at 16#d8# range 0 .. 63;
-      X26 at 16#e0# range 0 .. 63;
-      X27 at 16#e8# range 0 .. 63;
-      X28 at 16#f0# range 0 .. 63;
-      X29 at 16#f8# range 0 .. 63;
-      X30 at 16#100# range 0 .. 63;
-      Reserved at 16#108# range 0 .. 63;
-   end record;
+   function Get_Cpu_Interrupt_Nesting (Cpu_Id : Valid_Cpu_Core_Id_Type)
+      return Interrupt_Nesting_Type is
+      (Cpu_To_Interrupt_Nesting (Cpu_Id));
 
 end CPU.Interrupt_Handling;

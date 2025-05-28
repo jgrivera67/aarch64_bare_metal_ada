@@ -62,6 +62,34 @@ package body CPU is
       return Result;
    end Count_Leading_Zeros;
 
+   function Cpu_Running_In_Little_Endian return Boolean is
+      CurrentEL : constant Exception_Level_Type := Get_CurrentEL;
+      SCTLR_EL1_Value : constant SCTLR_EL1_Type := Get_SCTLR_EL1;
+   begin
+      --  Check if the CPU is running in EL0 and Little Endian mode:
+      return (CurrentEL = EL0 and then
+              SCTLR_EL1_Value.E0E = EL0_Is_Little_Endian) or else
+             (CurrentEL = EL1 and then
+              SCTLR_EL1_Value.EE = EL1_Is_Little_Endian);
+   end Cpu_Running_In_Little_Endian;
+
+   function Convert_To_Big_Endian (Value : Cpu_Register_Type) return Cpu_Register_Type
+   is
+      Result : Cpu_Register_Type;
+   begin
+      if Cpu_Running_In_Little_Endian then
+         System.Machine_Code.Asm (
+            "rev %0, %1",
+            Outputs => Cpu_Register_Type'Asm_Output ("=r", Result), --  %0
+            Inputs => Cpu_Register_Type'Asm_Input ("r", Value),     --  %1
+            Volatile => True);
+      else
+         Result := Value;
+      end if;
+
+      return Result;
+   end Convert_To_Big_Endian;
+
    function Get_CurrentEL return Exception_Level_Type is
       PSTATE_Value : PSTATE_Type;
    begin

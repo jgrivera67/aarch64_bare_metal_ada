@@ -25,7 +25,7 @@ package body CPU.Self_Hosted_Debug is
       end if;
    end Run_Debugger;
 
-   function Get_Self_Hosted_Debug_Capabilities return Self_Hosted_Debug_Capabilities_Type
+   function Get_Self_Hosted_Debug_Capabilities return Capabilities_Type
    is
       ID_AA64DFR0_EL1_Value : constant ID_AA64DFR0_EL1_Type := Get_ID_AA64DFR0_EL1;
    begin
@@ -234,7 +234,7 @@ package body CPU.Self_Hosted_Debug is
       return ID_AA64DFR0_EL1_Value;
    end Get_ID_AA64DFR0_EL1;
 
-   function Get_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type)
+   function Get_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type)
       return DBGBCRx_EL1_Type
    is
       DBGBCRx_EL1_Value : DBGBCRx_EL1_Type;
@@ -325,7 +325,7 @@ package body CPU.Self_Hosted_Debug is
       return DBGBCRx_EL1_Value;
    end Get_DBGBCRx_EL1;
 
-   procedure Set_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type;
+   procedure Set_DBGBCRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type;
                               DBGBCRx_EL1_Value : DBGBCRx_EL1_Type) is
    begin
       case Hardware_Breakpoint_Id is
@@ -412,7 +412,7 @@ package body CPU.Self_Hosted_Debug is
       end case;
    end Set_DBGBCRx_EL1;
 
-   function Get_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type)
+   function Get_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type)
       return DBGBVRx_EL1_Type is
       DBGBVRx_EL1_Value : DBGBVRx_EL1_Type;
    begin
@@ -502,7 +502,7 @@ package body CPU.Self_Hosted_Debug is
       return DBGBVRx_EL1_Value;
    end Get_DBGBVRx_EL1;
 
-   procedure Set_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Hardware_Breakpoint_Id_Type;
+   procedure Set_DBGBVRx_EL1 (Hardware_Breakpoint_Id : Valid_Hardware_Breakpoint_Id_Type;
                               DBGBVRx_EL1_Value : DBGBVRx_EL1_Type) is
    begin
       case Hardware_Breakpoint_Id is
@@ -589,7 +589,7 @@ package body CPU.Self_Hosted_Debug is
       end case;
    end Set_DBGBVRx_EL1;
 
-   function Get_DBGWCRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type)
+   function Get_DBGWCRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type)
       return DBGWCRx_EL1_Type is
       DBGWCRx_EL1_Value : DBGWCRx_EL1_Type;
    begin
@@ -679,7 +679,7 @@ package body CPU.Self_Hosted_Debug is
       return DBGWCRx_EL1_Value;
    end Get_DBGWCRx_EL1;
 
-   procedure Set_DBGWCRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type;
+   procedure Set_DBGWCRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type;
                               DBGWCRx_EL1_Value : DBGWCRx_EL1_Type) is
    begin
       case Watchpoint_Id is
@@ -766,7 +766,7 @@ package body CPU.Self_Hosted_Debug is
       end case;
    end Set_DBGWCRx_EL1;
 
-   function Get_DBGWVRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type)
+   function Get_DBGWVRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type)
       return DBGWVRx_EL1_Type is
       DBGWVRx_EL1_Value : DBGWVRx_EL1_Type;
    begin
@@ -856,7 +856,7 @@ package body CPU.Self_Hosted_Debug is
       return DBGWVRx_EL1_Value;
    end Get_DBGWVRx_EL1;
 
-   procedure Set_DBGWVRx_EL1 (Watchpoint_Id : Watchpoint_Id_Type;
+   procedure Set_DBGWVRx_EL1 (Watchpoint_Id : Valid_Watchpoint_Id_Type;
                               DBGWVRx_EL1_Value : DBGWVRx_EL1_Type) is
    begin
       case Watchpoint_Id is

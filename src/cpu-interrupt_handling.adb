@@ -137,17 +137,21 @@ package body CPU.Interrupt_Handling is
    end Ada_Handle_EL1_Unexpected_Exception;
 
    function Ada_Enter_Interrupt_Context (Stack_Pointer : System.Address) return System.Address is
-      Interrupt_Nesting : Interrupt_Nesting_Type renames
-        Cpu_To_Interrupt_Nesting (CPU.Multicore.Get_Cpu_Id);
+      Cpu_Context : Cpu_Context_Type with Import, Address => Stack_Pointer;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Interrupt_Nesting : Interrupt_Nesting_Type renames Cpu_To_Interrupt_Nesting (Cpu_Id);
    begin
+      Cpu_Context.Registers (SP) := Cpu_Register_Type (To_Integer (Stack_Pointer));
       Increase_Interrupt_Nesting (Interrupt_Nesting, Stack_Pointer);
       return Stack_Pointer;
    end Ada_Enter_Interrupt_Context;
 
    function Ada_Exit_Interrupt_Context (Stack_Pointer : System.Address) return System.Address is
-      Interrupt_Nesting : Interrupt_Nesting_Type renames
-        Cpu_To_Interrupt_Nesting (CPU.Multicore.Get_Cpu_Id);
+      Cpu_Context : Cpu_Context_Type with Import, Address => Stack_Pointer;
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Interrupt_Nesting : Interrupt_Nesting_Type renames Cpu_To_Interrupt_Nesting (Cpu_Id);
    begin
+      pragma Assert (Cpu_Context.Registers (SP) = Cpu_Register_Type (To_Integer (Stack_Pointer)));
       Decrease_Interrupt_Nesting (Interrupt_Nesting);
       return Stack_Pointer;
    end Ada_Exit_Interrupt_Context;
@@ -210,6 +214,14 @@ package body CPU.Interrupt_Handling is
 
       pragma Assert (not Cpu_Interrupting_Disabled);
    end Enable_Cpu_Interrupting;
+
+   function Cpu_In_Interrupt_Context return Boolean is
+      Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
+      Interrupt_Nesting : Interrupt_Nesting_Type renames
+        Cpu_To_Interrupt_Nesting (Cpu_Id);
+   begin
+      return Interrupt_Nesting.Nesting_Level > Interrupt_Nesting_Level_Type'First;
+   end Cpu_In_Interrupt_Context;
 
    function Get_ESR_EL1 return ESR_EL1_Type is
       ESR_EL1_Value : ESR_EL1_Type;
@@ -275,7 +287,7 @@ package body CPU.Interrupt_Handling is
       Cpu_Context : constant Cpu_Context_Type with
          Import, Address => Saved_Stack_Pointer;
    begin
-      return To_Address (Integer_Address (Cpu_Context.PC));
+      return To_Address (Integer_Address (Cpu_Context.Registers (ELR_ELx)));
    end Get_Saved_PC;
 
    procedure Set_Saved_PC (PC_Value : System.Address) is
@@ -286,7 +298,7 @@ package body CPU.Interrupt_Handling is
       Cpu_Context : Cpu_Context_Type with
          Import, Address => Saved_Stack_Pointer;
    begin
-      Cpu_Context.PC := Cpu_Register_Type (To_Integer (PC_Value));
+      Cpu_Context.Registers (ELR_ELx) := Cpu_Register_Type (To_Integer (PC_Value));
    end Set_Saved_PC;
 
 end CPU.Interrupt_Handling;

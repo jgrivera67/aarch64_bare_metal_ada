@@ -149,7 +149,8 @@ function my_uart {
    tty_port=$1
 
    #picocom -b 115200 --send-cmd="lsx -vv --xmodem --binary" --receive-cmd="lrx -vv" $tty_port
-   picocom -b 115200 --send-cmd="$HOME/my-projects/aarch64_bare_metal_ada/host_apps/uart_boot_loader_client/bin/uart_boot_loader_client" $tty_port
+   picocom -b 115200 --send-cmd="$HOME/my-projects/aarch64_bare_metal_ada/host_apps/uart_boot_loader_client/bin/uart_boot_loader_client" \
+                     --noreset $tty_port
 }
 
 function my_gdb
@@ -165,7 +166,8 @@ function my_gdb
     tty_name=$1
     elf_file=$2
 
-    arm-none-eabi-gdb -b 115200 \
+    aarch64-elf-gdb -b 115200 -l 10 \
+        --eval-command="set debug remote 1" \
         --eval-command="target remote $tty_name" \
         --eval-command="set output-radix 16" \
         --eval-command="set print address on" \
@@ -177,7 +179,7 @@ function my_gdb
         $elf_file
 
         #--eval-command="set debug remote 1" \
+        #--eval-command="set remotetimeout 10" \
 }
-
 
 . ~/my-projects/third-party/alire/scripts/alr-completion.bash
