@@ -42,19 +42,22 @@ laptop to the Raspberry PI's UART0 serial port.
 ## How to build the GNAT cross-tool chain from sources for bare-metal AArch64
 
 ### Download Sources
-- Download latest gcc sources: https://www.gnu.org/software/gcc/
 - Download latest binutils sources: https://www.gnu.org/software/binutils/
+- Download latest gcc sources: https://www.gnu.org/software/gcc/
+- Download latest gdb sources: https://www.gnu.org/software/gdb/
 
 ### Building gnat cross-compiler for bare-metal AArch64
 Follow the steps described in https://wiki.osdev.org/GNAT_Cross-Compiler, making corresponding changes for AArch64:
 
-- Example for building on MacOS
-Run script [build_aarch64_elf_gnat_toolchain_on_macos.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh)
+- Building on MacOS:
+  Use script [build_aarch64_elf_gnat_toolchain_on_macos.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh). Update ` and `` as needed.
 
-- Example for building on Ubuntu Linux
-Run script [build_aarch64_elf_gnat_toolchain_on_ubuntu.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_ubuntu.sh)
+  NOTE: If the build fails with the default native gcc compiler, try [gcc-14.2.0-3-aarch64-apple-darwin23](https://github.com/simonjwright/distributing-gcc/releases/download/gcc-14.2.0-3-aarch64/gcc-14.2.0-3-aarch64-apple-darwin23.pkg)
 
-A recent native gnat compiler is neeeded to build the cross-compiler. One way to get one is through
+- Building on Ubuntu Linux:
+Use script [build_aarch64_elf_gnat_toolchain_on_ubuntu.sh](../third_party/build_aarch64_elf_gnat_toolchain_on_ubuntu.sh)
+
+A recent native gnat compiler is needed to build the cross-compiler. One way to get one is through
 the `alr toolchain --select` command. This command installs gnat compilers at `~/.local/share/alire/toolchains/gnat_native_*
 
 <a id="section_4"></a>
