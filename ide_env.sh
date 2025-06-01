@@ -9,65 +9,7 @@ export GIT_EXTERNAL_DIFF=tkdiff
 
 alias v='gvim -U ide_env.vim'
 alias build_for_uart_boot='alr build -- -XUart_Boot=yes'
-
-function run_fvp {
-   typeset elf_file
-
-   if [ $# != 1 ]; then
-        echo "Usage: $FUNCNAME <elf file>"
-        return 1
-   fi
-
-   elf_file=$1
-
-   #
-   # NOTE:
-   # - `cluster0.gicv3.SRE-EL2-enable-RAO=1` and `cluster0.gicv3.cpuintf-mmap-access-level=2`
-   #   are needed to enable access to the GIC CPU interface's system registers
-   # - `bp.refcounter.non_arch_start_at_default=1` enables the system counter that drives
-   #   the generic timer counter.
-   #
-   $ARMFVP_BIN_PATH/FVP_BaseR_AEMv8R \
-           -C bp.pl011_uart0.uart_enable=1 \
-           -C bp.pl011_uart0.baud_rate=460800 \
-           -C bp.pl011_uart1.uart_enable=1 \
-           -C bp.pl011_uart1.baud_rate=460800 \
-           -C bp.pl011_uart2.uart_enable=1 \
-           -C bp.pl011_uart2.baud_rate=460800 \
-           -C bp.pl011_uart3.uart_enable=1 \
-           -C bp.pl011_uart3.baud_rate=460800 \
-           -C cluster0.gicv3.SRE-EL2-enable-RAO=1 \
-           -C cluster0.gicv3.cpuintf-mmap-access-level=2 \
-           -C bp.refcounter.non_arch_start_at_default=1 \
-	   --application $elf_file #--log ~/tmp/fvp-run.log
-
-	   #-C cci400.force_on_from_start=1 \
-           #-C bp.sram.enable_atomic_ops=1 \
-           #-C cci400.force_on_from_start=1 \
-           #-C cluster0.gicv3.EOI-check-ID=1 \
-           #-C cluster0.gicv3.EOI-check-CPUID=1 \
-}
-
-function run_fvp_with_trace {
-   typeset elf_file
-
-   if [ $# != 1 ]; then
-        echo "Usage: $FUNCNAME <elf file>"
-        return 1
-   fi
-
-   elf_file=$1
-   $ARMFVP_BIN_PATH/FVP_BaseR_AEMv8R \
-	   --plugin=$ARMFVP_DIR//plugins/Linux64_GCC-9.3/TarmacTrace.so \
-	   --parameter TRACE.TarmacTrace.trace-file="STDERR" \
-           -C bp.pl011_uart0.uart_enable=1 \
-           -C bp.pl011_uart0.baud_rate=115200 \
-           -C cluster0.gicv3.SRE-EL2-enable-RAO=1 \
-           -C cluster0.gicv3.cpuintf-mmap-access-level=2 \
-           -C bp.refcounter.non_arch_start_at_default=1 \
-	   -C cci400.force_on_from_start=1 \
-	   --application $elf_file # 2> ~/tmp/fvp-trace.pipe
-}
+alias run_ser2net='/opt/homebrew/sbin/ser2net -n -d -l -c /opt/homebrew/etc/ser2net/ser2net.yaml -P /tmp/ser2net.pid &'
 
 function gen_lst_arm64
 {
@@ -166,8 +108,13 @@ function my_gdb
     tty_name=$1
     elf_file=$2
 
-    aarch64-elf-gdb -b 115200 -l 10 \
-        --eval-command="set debug remote 1" \
+    #
+    # NOTE: For debugging the GDB server, add the following
+    # two lines before "--eval-command="target remote ..."
+    # --eval-command="set debug remote 1" \
+    # --eval-command="set remotetimeout 10" \
+    #
+    aarch64-elf-gdb -b 115200 \
         --eval-command="target remote $tty_name" \
         --eval-command="set output-radix 16" \
         --eval-command="set print address on" \
@@ -177,9 +124,6 @@ function my_gdb
         --eval-command="set history save on" \
         --eval-command="set pagination off" \
         $elf_file
-
-        #--eval-command="set debug remote 1" \
-        #--eval-command="set remotetimeout 10" \
 }
 
 . ~/my-projects/third-party/alire/scripts/alr-completion.bash

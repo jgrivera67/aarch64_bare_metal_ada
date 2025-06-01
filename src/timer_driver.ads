@@ -15,7 +15,10 @@ package Timer_Driver is
 
    procedure Initialize;
 
-   function Get_Timestamp_Usec return Interfaces.Unsigned_64;
+   type Timestamp_Us_Type is new Interfaces.Unsigned_64;
+
+   function Get_Timestamp_Us return Timestamp_Us_Type
+      with Pre => CPU.Cpu_In_Privileged_Mode;
 
    type Delta_Time_Us_Type is new Interfaces.Unsigned_32;
 
@@ -92,36 +95,38 @@ private
    --
    --  Counter-timer Virtual Timer TimerValue register
    --
-   --  From section G8.7.18 of DDI0487Fc_armv8_arm.pdf:
-   --  "On a read of this register:
-   --  - If CNTP_CTL.ENABLE is 0, the value returned is UNKNOWN.
-   --  - If CNTP_CTL.ENABLE is 1, the value returned is (CNTP_CVAL - CNTPCT).
-   --
-   --  On a write of this register, CNTP_CVAL is set to (CNTPCT + TimerValue), where
+   --  From section D23.10.27 of DDI0487K_a_a-profile_architecture_reference_manual.pdf:
+   --   "On a read of this register:
+   --  - If CNTV_CTL_EL0.ENABLE is 0, the value returned is UNKNOWN.
+   --  - If CNTV_CTL_EL0.ENABLE is 1, the value returned is (CNTV_CVAL_EL0 - CNTVCT_EL0).
+   --  On a write of this register, CNTV_CVAL_EL0 is set to (CNTVCT_EL0 + TimerValue), where
    --  TimerValue is treated as a signed 32-bit integer.
-   --  When CNTP_CTL.ENABLE is 1, the timer condition is met when (CNTPCT - CNTP_CVAL)
-   --  is greater than or equal to zero. This means that TimerValue acts like a 32-bit
-   --  down-counter timer. When the timer condition is met:
-   --  - CNTP_CTL.ISTATUS is set to 1.
-   --  - If CNTP_CTL.IMASK is 0, an interrupt is generated.
-   --
-   --  When CNTP_CTL.ENABLE is 0, the timer condition is not met, but CNTPCT continues
-   --  to count, so the TimerValue view appears to continue to count down."
+   --  When CNTV_CTL_EL0.ENABLE is 1, the timer condition is met when (CNTVCT_EL0 -
+   --  CNTV_CVAL_EL0) is greater than or equal to zero. This means that TimerValue acts like a 32-bit
+   --  downcounter timer. When the timer condition is met:
+   --  • CNTV_CTL_EL0.ISTATUS is set to 1.
+   --  • If CNTV_CTL_EL0.IMASK is 0, an interrupt is generated.
+   --  When CNTV_CTL_EL0.ENABLE is 0, the timer condition is not met, but CNTVCT_EL0
+   --  continues to count, so the TimerValue view appears to continue to count down."
    --
    --  NOTE: We don't need to declare this register with Volatile_Full_Access,
    --  as it is not memory-mapped. It is accessed via MRS/MSR instructions.
+   --  Also, the value of this th register is treated as a signed 32-bit integer, it
+   --  is a 64-bit register.
    --
 
-   function Get_CNTV_TVAL return Interfaces.Unsigned_64
+   type Timer_Cycles_Type is new Interfaces.Unsigned_64;
+
+   function Get_CNTV_TVAL return Timer_Cycles_Type
       with Inline_Always;
 
-   procedure Set_CNTV_TVAL (CNTV_TVAL_Value : Interfaces.Unsigned_64)
+   procedure Set_CNTV_TVAL (CNTV_TVAL_Value : Timer_Cycles_Type)
       with Inline_Always;
 
    --
    --  Counter-timer Virtual Count register (Free-running counter)
    --
-   function Get_CNTVCT return Interfaces.Unsigned_64
+   function Get_CNTVCT return Timer_Cycles_Type
       with Inline_Always;
 
    function Get_CNTFRQ return Interfaces.Unsigned_64
@@ -129,19 +134,19 @@ private
 
    use type Interfaces.Unsigned_64;
 
-   function Get_Timestamp_Cycles return Interfaces.Unsigned_64 is
+   function Get_Timestamp_Cycles return Timer_Cycles_Type is
       (Get_CNTVCT);
 
-   function Get_Timer_Counter_Cycles_Per_Usec return Interfaces.Unsigned_64 is
-      (Get_CNTFRQ / 1_000_000);
+   function Get_Timer_Counter_Cycles_Per_Usec return Timer_Cycles_Type is
+      (Timer_Cycles_Type (Get_CNTFRQ / 1_000_000));
 
-   function Get_Timestamp_Usec return Interfaces.Unsigned_64 is
-      (Get_Timestamp_Cycles / Get_Timer_Counter_Cycles_Per_Usec);
+   function Get_Timestamp_Us return Timestamp_Us_Type is
+      (Timestamp_Us_Type (Get_Timestamp_Cycles / Get_Timer_Counter_Cycles_Per_Usec));
 
    type Timer_Device_Type is limited record
       Interrupt_Callback_Pointer : Timer_Interrupt_Callback_Pointer_Type := null;
       Interrupt_Callback_Arg : System.Address := System.Null_Address;
-      Last_Period_Time_Stamp_Cycles : Interfaces.Unsigned_64 := 0;
+      Last_Period_Time_Stamp_Cycles : Timer_Cycles_Type := 0;
       Timer_Interrupt_Small_Drift_Count : Interfaces.Unsigned_32 := 0;
       Timer_Interrupt_Big_Drift_Count : Interfaces.Unsigned_32 := 0;
    end record;

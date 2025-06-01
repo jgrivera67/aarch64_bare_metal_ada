@@ -1,12 +1,12 @@
-name = "aarch64_interrupts"
-description = "AArch64 Interrupts test program"
+name = "aarch64_runtime_log"
+description = "AArch64 Runtime log test program"
 version = "0.1.0-dev"
 
 authors = ["J. German Rivera"]
 maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
 maintainers-logins = ["jgrivera67"]
 
-executables = ["aarch64_interrupts"]
+executables = ["aarch64_runtime_log"]
 
 [[depends-on]]
 aarch64_baremetal_ada = "*"
@@ -24,4 +24,4 @@ aarch64_baremetal_ada = "development"
 [actions.'case(os)'.windows]
 [actions.'case(os)'.'...']
 type = "post-build"
-command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/aarch64_interrupts.elf > bin/aarch64_interrupts.lst; aarch64-elf-objcopy -O binary bin/aarch64_interrupts.elf bin/aarch64_interrupts.bin"]
+command = ["sh", "-c", "aarch64-elf-objdump -dSstl bin/aarch64_runtime_log.elf > bin/aarch64_runtime_log.lst; aarch64-elf-objcopy -O binary bin/aarch64_runtime_log.elf bin/aarch64_runtime_log.bin"]

@@ -60,7 +60,7 @@ package CPU.Interrupt_Handling with SPARK_Mode => On is
    --  in which CPU registers are stored in the stack when entering an ISR
    --  (pushed in reverse order and popped in this order).
    --
-   type Cpu_Register_Id_Type is (ELR_ELx, SPSR_ELx,
+   type Cpu_Register_Id_Type is (ELR_ELx_Or_PC, SPSR_ELx_Or_PSTATE,
                                  X30_Or_LR, SP,
                                  X28, X29_Or_FP,
                                  X26, X27,

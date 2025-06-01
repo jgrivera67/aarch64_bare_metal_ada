@@ -4,6 +4,7 @@
 --
 --  SPDX-License-Identifier: Apache-2.0
 --
+with CPU;
 with Utils;
 
 package body Interrupt_Callbacks is
@@ -13,7 +14,7 @@ package body Interrupt_Callbacks is
       Counter : Interfaces.Unsigned_32 with Address => Arg, Import;
    begin
       Counter := @ + 1;
-      Utils.Lock_Console (Print_Cpu => True);
+      Utils.Lock_Console;
       Utils.Print_String ("*** Timer interrupt has fired ");
       Utils.Print_Number_Decimal (Counter);
       Utils.Print_String (" times" & ASCII.LF);
@@ -25,7 +26,7 @@ package body Interrupt_Callbacks is
       Counter : Interfaces.Unsigned_32 with Address => Arg, Import;
    begin
       Counter := @ + 1;
-      Utils.Lock_Console (Print_Cpu => True);
+      Utils.Lock_Console;
       Utils.Print_String ("*** UART interrupt has fired ");
       Utils.Print_Number_Decimal (Counter);
       Utils.Print_String (" times (byte received: ");
@@ -38,6 +39,19 @@ package body Interrupt_Callbacks is
          Utils.Print_Number_Hexadecimal (Byte_Received);
       end if;
       Utils.Print_String (")" & ASCII.LF);
+
+      if Character'Val (Byte_Received) = Utils.Ctrl_C then
+         --
+         --  Enter the self-hosted debugger:
+         --
+         --  NOTE: Other CPUs will not be able to print to the UART
+         --  while we ar ein the self-hosted debugger, as we own the
+         --  console lock.
+         --
+         Utils.Print_String (ASCII.LF & "^C" & ASCII.LF);
+         CPU.Break_Point;
+      end if;
+
       Utils.Unlock_Console;
    end Uart_Rx_Interrupt_Callback;
 

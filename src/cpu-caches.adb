@@ -8,6 +8,7 @@
 --  @summary CPU caches utilities
 --
 
+with Utils.Runtime_Log;
 with System.Machine_Code;
 
 package body CPU.Caches is
@@ -23,6 +24,7 @@ package body CPU.Caches is
       SCTLR_Value.I := Instruction_Access_Cacheable;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
+      Utils.Runtime_Log.Log_Info_Msg ("Caches enabled");
    end Enable_Caches;
 
    procedure Disable_Caches is
@@ -34,6 +36,7 @@ package body CPU.Caches is
       SCTLR_Value.I := Instruction_Access_Non_Cacheable;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
+      Utils.Runtime_Log.Log_Info_Msg ("Caches Disabled");
    end Disable_Caches;
 
    procedure Invalidate_Data_Cache is

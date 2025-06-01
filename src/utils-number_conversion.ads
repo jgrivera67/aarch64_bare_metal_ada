@@ -49,6 +49,8 @@ is
    procedure Unsigned_To_Hexadecimal_String (Value : System.Storage_Elements.Integer_Address;
                                              Buffer : out String);
 
+   subtype Unsigned_32_Decimal_String_Type is String (1 .. 10);
+
    procedure Unsigned_To_Decimal_String (Value : Interfaces.Unsigned_32;
                                          Buffer : out String;
                                          Actual_Length : out Positive;

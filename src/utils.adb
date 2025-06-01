@@ -5,11 +5,13 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
-with CPU.Multicore;
-with Timer_Driver;
+with CPU.Interrupt_Handling;
 with Utils.Number_Conversion;
+with Utils.Runtime_Log;
 
 package body Utils is
+   use Utils.Runtime_Log;
+
    Last_Chance_Handler_Running : array (CPU.Valid_Cpu_Core_Id_Type) of Boolean :=
       [others => False];
 
@@ -70,12 +72,41 @@ package body Utils is
       Cursor_Index := @ + Source'Length;
    end Copy_String;
 
-   Console_Spinlock : CPU.Multicore.Spinlock_Type;
+   function Equal_Strings (Str1, Str2 : String) return Boolean is
+      use System.Storage_Elements;
+      Machine_Alignment : constant := Integer_Address'Size / System.Storage_Unit;
+   begin
+      if Str1'Length /= Str2'Length then
+         return False;
+      end if;
 
-   procedure Lock_Console (Print_Cpu : Boolean) is
+      --
+      --  NOTE: This is a workaround for a compiler bug that generates
+      --  multi-byte loads at not properly-aligned addresses, when comparing
+      --  strings directly. This causes data abort exceptions, even with
+      --  alignment exceptions disabled, at least on the Raspberry PI's Aarch64
+      --  cores
+      --
+      if To_Integer (Str1'Address) mod Machine_Alignment = 0 and then
+         To_Integer (Str2'Address) mod Machine_Alignment = 0
+      then
+         --  If both strings are aligned, we can compare them as arrays
+         return Str1 = Str2;
+      end if;
+
+      for I in 0 .. Str1'Length - 1 loop
+         if Str1 (Str1'First + I) /= Str2 (Str2'First + I) then
+            return False;
+         end if;
+      end loop;
+
+      return True;
+   end Equal_Strings;
+
+   procedure Lock_Console (Print_Cpu : Boolean := True) is
       Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
    begin
-      if not CPU.Mmu_Is_Enabled then
+      if not CPU.Cpu_Is_Multicore_Synchronization_Ready then
          return;
       end if;
 
@@ -89,7 +120,7 @@ package body Utils is
 
    procedure Unlock_Console is
    begin
-      if not CPU.Mmu_Is_Enabled then
+      if not CPU.Cpu_Is_Multicore_Synchronization_Ready then
          return;
       end if;
 
@@ -97,21 +128,80 @@ package body Utils is
       CPU.Multicore.Spinlock_Release (Console_Spinlock);
    end Unlock_Console;
 
-   function Receive_Byte_With_Timeout (Timeout_Usec : Interfaces.Unsigned_64)
+   function Receive_Byte_With_Timeout (Timeout_Us : Timer_Driver.Delta_Time_Us_Type)
       return Uart_Driver.Maybe_Byte_Type
    is
-      use type Interfaces.Unsigned_64;
+      use Timer_Driver;
       Maybe_Byte : Uart_Driver.Maybe_Byte_Type;
-      Start_Timestamp_Usec : constant Interfaces.Unsigned_64 := Timer_Driver.Get_Timestamp_Usec;
+      Start_Timestamp_Us : constant Timestamp_Us_Type := Get_Timestamp_Us;
+      Delta_Time_Us : Delta_Time_Us_Type;
    begin
       loop
          Maybe_Byte := Uart_Driver.Receive_Byte_If_Any;
-         exit when Maybe_Byte.Valid or else
-                   Timer_Driver.Get_Timestamp_Usec - Start_Timestamp_Usec >= Timeout_Usec;
+         Delta_Time_Us := Delta_Time_Us_Type (Get_Timestamp_Us - Start_Timestamp_Us);
+         exit when Maybe_Byte.Valid or else Delta_Time_Us >= Timeout_Us;
       end loop;
 
       return Maybe_Byte;
    end Receive_Byte_With_Timeout;
+
+   procedure Wait_For_Ctrl_C is
+   begin
+      Lock_Console;
+      Print_String ("Press CTRL-C to continue" & ASCII.LF);
+      Unlock_Console;
+
+      --
+      --   Wait for CTRL-C to be received on the UART
+      --
+      if Uart_Driver.Input_Interrupt_Enabled then
+         declare
+            Byte : Uart_Driver.Maybe_Byte_Type;
+         begin
+            loop
+               Byte := Uart_Driver.Receive_Byte_If_Any;
+               exit when Byte.Valid and then
+                         Character'Val (Byte.Byte) = Ctrl_C;
+
+               CPU.Interrupt_Handling.Wait_For_Interrupt;
+            end loop;
+         end;
+      else
+         declare
+            C : Character;
+         begin
+            loop
+               C := Get_Char;
+               exit when C = Ctrl_C;
+            end loop;
+         end;
+      end if;
+
+      Lock_Console (Print_Cpu => False);
+      Print_String (ASCII.LF & "^C" & ASCII.LF);
+   end Wait_For_Ctrl_C;
+
+   function Get_PC_Here return System.Address is
+      Call_Address : constant System.Address := CPU.Get_Call_Address;
+   begin
+      return Call_Address;
+   end Get_PC_Here;
+
+   procedure System_Crash is
+      Old_Cpu_Interrupting_State : CPU.Cpu_Register_Type with Unreferenced;
+   begin
+      Old_Cpu_Interrupting_State := CPU.Interrupt_Handling.Disable_Cpu_Interrupting;
+      Log_Info_Msg ("*** System Crashing ***");
+      Wait_For_Ctrl_C;
+
+      Lock_Console;
+      Print_String ("*** System crashed ***" & ASCII.LF);
+      Dump_Runtime_Log;
+      Unlock_Console;
+
+      Log_Info_Msg ("*** Parking CPU ***" & ASCII.LF);
+      CPU.Park_Cpu;
+   end System_Crash;
 
    procedure Last_Chance_Handler (Msg : System.Address; Line : Integer) is
       Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
@@ -129,29 +219,27 @@ package body Utils is
       --
       --  Print exception message to UART:
       --
-      Lock_Console (Print_Cpu => False);
-      Print_String (ASCII.LF & "*** CPU");
-      Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
       if Last_Chance_Handler_Running (Cpu_Id) then
-         Print_String (" Recursive");
-      end if;
-
-      Print_String (" Exception: '");
-      Print_String (Msg_Text (1 .. Msg_Length));
-      if Line /= 0 then
-         Print_String ("' at line ");
-         Print_Number_Decimal (Interfaces.Unsigned_32 (Line), End_Line => True);
+         Log_Error_Msg_Begin ("*** Recursive Ada Exception: '");
       else
-         Print_String ("'" & ASCII.LF);
+         Log_Error_Msg_Begin ("*** Ada Exception: '");
       end if;
-      Unlock_Console;
 
+      Log_Error_Msg_Part (Msg_Text (1 .. Msg_Length));
+      if Line /= 0 then
+         Log_Error_Msg_Part ("' at line ");
+         Log_Error_Value_Decimal (Interfaces.Unsigned_32 (Line));
+      else
+         Log_Error_Msg_Part ("'");
+      end if;
+
+      Log_Error_Msg_End (" ***" & ASCII.LF);
       if not Last_Chance_Handler_Running (Cpu_Id) then
          Last_Chance_Handler_Running (Cpu_Id) := True;
          --  Break into the self-hosted debugger:
          CPU.Break_Point;
       end if;
 
-      CPU.Park_Cpu;
+      System_Crash;
    end Last_Chance_Handler;
 end Utils;

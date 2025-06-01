@@ -16,11 +16,16 @@ private with System.Storage_Elements;
 with Interfaces;
 
 package Gdb_Server with SPARK_Mode => On is
+
+   Debug_On : Boolean := False;
+
    procedure Run_Gdb_Server (
       Debug_Event : CPU.Self_Hosted_Debug.Debug_Event_Type;
       Current_PC : in out System.Address)
       with Pre => CPU.Cpu_In_Privileged_Mode and then
                   CPU.Cpu_Interrupting_Disabled;
+
+   function Gdb_Server_Is_Running return Boolean;
 
 private
    use CPU.Self_Hosted_Debug;
@@ -47,11 +52,17 @@ private
       Gdb_Packet_Data_Index_Type'First .. Gdb_Packet_Data_Index_Type'Last - 1;
 
    type Gdb_Server_Type is limited record
+      --  Flag indicating that the GDB server is currently running
+      Running : Boolean := False;
+
       --  Flag indicating that a GDB client is currently attached
       Gdb_Attached : Boolean := False;
 
       --  Flag indicating that the target being debugged must be resumed
       Resume_Target : Boolean := False;
+
+      --  Flag indicating that the GDB server has been aborted
+      Gdb_Server_Aborted : Boolean := False;
 
       --  PC where the exception that caused the self-hosted debugger to be entered happened
       Current_PC : System.Address := System.Null_Address;
@@ -93,12 +104,17 @@ private
 
    Gdb_Server_Objects : array (CPU.Valid_Cpu_Core_Id_Type) of Gdb_Server_Type;
 
-   --
-   --  NOTE: Only one CPU core can be running its GDB server at a time, since
-   --  they all share the same UART to communicate with the GDB client.
-   --
-   Gdb_Server_Uart_Spinlock : CPU.Multicore.Spinlock_Type;
+   function Gdb_Server_Is_Running return Boolean is
+      (Gdb_Server_Objects (CPU.Multicore.Get_Cpu_Id).Running);
 
+   --
+   --  GDB CPU register IDs:
+   --  - ‘x0’ through ‘x30’, the general purpose registers
+   --  - ‘sp’, the stack pointer register
+   --  - ‘pc’, the program counter register.
+   --  - ‘cpsr’, the current program status register (32-bit register).
+   --  (See https://sourceware.org/gdb/current/onlinedocs/gdb.html/AArch64-Features.html)
+   --
    type Gdb_Cpu_Register_Id_Type is (Gdb_X0, Gdb_X1,
                                      Gdb_X2, Gdb_X3,
                                      Gdb_X4, Gdb_X5,
@@ -114,7 +130,8 @@ private
                                      Gdb_X24, Gdb_X25,
                                      Gdb_X26, Gdb_X27,
                                      Gdb_X28, Gdb_X29,
-                                     Gdb_X30);
+                                     Gdb_X30, Gdb_SP,
+                                     Gdb_PC, Gdb_CPSR);
 
    Gdb_Cpu_Register_Id_To_Cpu_Register_Id : constant
       array (Gdb_Cpu_Register_Id_Type) of CPU.Interrupt_Handling.Cpu_Register_Id_Type := [
@@ -148,11 +165,15 @@ private
       Gdb_X27 => CPU.Interrupt_Handling.X27,
       Gdb_X28 => CPU.Interrupt_Handling.X28,
       Gdb_X29 => CPU.Interrupt_Handling.X29_Or_FP,
-      Gdb_X30 => CPU.Interrupt_Handling.X30_Or_LR
+      Gdb_X30 => CPU.Interrupt_Handling.X30_Or_LR,
+      Gdb_SP => CPU.Interrupt_Handling.SP,
+      Gdb_PC => CPU.Interrupt_Handling.ELR_ELx_Or_PC,
+      Gdb_CPSR => CPU.Interrupt_Handling.SPSR_ELx_Or_PSTATE
    ];
 
    procedure Receive_Gdb_Packet (Gdb_Server_Obj : in out Gdb_Server_Type)
-      with Post => Gdb_Server_Obj.Gdb_Packet_Data_Length /= 0;
+      with Post => Gdb_Server_Obj.Gdb_Packet_Data_Length /= 0 or else
+                   Gdb_Server_Obj.Gdb_Server_Aborted;
 
    procedure Send_Gdb_Packet (Gdb_Server_Obj : in out Gdb_Server_Type);
 
@@ -172,6 +193,8 @@ private
                                     Error_Str : String);
 
    procedure Send_Gdb_Ok_Packet (Gdb_Server_Obj : in out Gdb_Server_Type);
+
+   procedure Send_Gdb_Empty_Packet (Gdb_Server_Obj : in out Gdb_Server_Type);
 
    procedure Send_Uppercase_S_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                       Signal_Num : Interfaces.Unsigned_8);

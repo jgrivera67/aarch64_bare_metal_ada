@@ -6,12 +6,12 @@
 
 package body Utils.Number_Conversion is
    procedure Unsigned_To_Decimal_String (Value : Interfaces.Unsigned_32;
-                                          Buffer : out String;
-                                          Actual_Length : out Positive;
-                                          Add_Leading_Zeros : Boolean := False)
+                                         Buffer : out String;
+                                         Actual_Length : out Positive;
+                                         Add_Leading_Zeros : Boolean := False)
    is
       use type Interfaces.Unsigned_32;
-      Tmp_Buffer : String (1 .. 10);
+      Tmp_Buffer : Unsigned_32_Decimal_String_Type;
       Start_Index : Positive range Tmp_Buffer'Range := Tmp_Buffer'First;
       Value_Left : Interfaces.Unsigned_32 := Value;
    begin

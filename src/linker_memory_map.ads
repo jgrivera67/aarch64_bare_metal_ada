@@ -20,6 +20,8 @@ package Linker_Memory_Map is
    Global_Data_Region_Start_Address : constant System.Address;
    Global_Data_Region_End_Address : constant System.Address;
 
+   Stacks_End_Address : constant System.Address;
+
 private
 
    --
@@ -74,5 +76,13 @@ private
 
    Global_Data_Region_End_Address : constant System.Address :=
       Global_Data_Region_End_Linker_Symbol'Address;
+
+   Stacks_End_Linker_Symbol : Interfaces.Unsigned_8
+      with Import,
+           Convention => Asm,
+           External_Name => "__stacks_end";
+
+   Stacks_End_Address : constant System.Address :=
+      Stacks_End_Linker_Symbol'Address;
 
 end Linker_Memory_Map;

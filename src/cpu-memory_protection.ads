@@ -10,11 +10,14 @@
 --
 
 with Interfaces;
+private with Linker_Memory_Map;
 
 package CPU.Memory_Protection
    with SPARK_Mode => On
 is
    use type System.Address;
+
+   Debug_On : Boolean := False;
 
    type Region_Permissions_Type is (None,
                                     Read_Only,
@@ -30,7 +33,7 @@ is
       Normal_Memory_Write_Through_Cacheable,
       Normal_Memory_Write_Back_Cacheable);
 
-   procedure Configure_Global_Regions
+   procedure Initialize
       with Pre => Cpu_In_Privileged_Mode and then
                   not Mmu_Is_Enabled,
            Post => Mmu_Is_Enabled;
@@ -65,30 +68,67 @@ is
                   To_Integer (Start_Virtual_Address) < To_Integer (End_Virtual_Address) and then
                   To_Integer (End_Virtual_Address) <= Virtual_Address_Space_Size_In_Bytes;
 
-   procedure Handle_Prefetch_Abort_Exception
-      with Pre => Cpu_In_Privileged_Mode;
+   procedure Enable_MMU with
+      Pre => Cpu_In_Privileged_Mode and then
+             not Mmu_Is_Enabled and then
+             not Caches_Are_Enabled,
+      Post => Mmu_Is_Enabled;
 
-   procedure Handle_Data_Abort_Exception
-      with Pre => Cpu_In_Privileged_Mode;
+   procedure Disable_MMU with
+      Pre => Cpu_In_Privileged_Mode and then
+             Mmu_Is_Enabled and then
+             not Caches_Are_Enabled,
+      Post => not Mmu_Is_Enabled;
+
+   function Valid_Readable_Data_Address (Address : System.Address) return Boolean;
+
+   function Valid_Readable_Data_Address (Address_Value : Integer_Address) return Boolean;
+
+   function Valid_Writable_Data_Address (Address : System.Address) return Boolean;
+
+   function Valid_Writable_Data_Address (Address_Value : Integer_Address) return Boolean;
+
+   function Valid_Code_Address (Address : System.Address) return Boolean;
+
+   function Valid_Code_Address (Address_Value : Integer_Address) return Boolean;
 
 private
 
-   procedure Initialize
+   function Valid_Readable_Data_Address (Address : System.Address) return Boolean is
+      (Valid_Readable_Data_Address (To_Integer (Address)));
+
+   function Valid_Readable_Data_Address (Address_Value : Integer_Address) return Boolean is
+      (Address_Value in
+         To_Integer (Linker_Memory_Map.Global_Data_Region_Start_Address) ..
+         To_Integer (Linker_Memory_Map.Stacks_End_Address) - 1
+       or else
+       Address_Value in
+         To_Integer (Linker_Memory_Map.Global_Rodata_Region_Start_Address) ..
+         To_Integer (Linker_Memory_Map.Global_Rodata_Region_End_Address) - 1);
+
+   function Valid_Writable_Data_Address (Address : System.Address) return Boolean is
+      (Valid_Writable_Data_Address (To_Integer (Address)));
+
+   function Valid_Writable_Data_Address (Address_Value : Integer_Address) return Boolean is
+      (Address_Value in
+         To_Integer (Linker_Memory_Map.Global_Data_Region_Start_Address) ..
+         To_Integer (Linker_Memory_Map.Stacks_End_Address) - 1);
+
+   function Valid_Code_Address (Address : System.Address) return Boolean is
+      (Valid_Code_Address (To_Integer (Address)));
+
+   function Valid_Code_Address (Address_Value : Integer_Address) return Boolean is
+      (Address_Value in
+         To_Integer (Linker_Memory_Map.Global_Text_Region_Start_Address) ..
+         To_Integer (Linker_Memory_Map.Global_Text_Region_End_Address) - 1);
+
+   procedure Initialize_MMU
       with Pre => Cpu_In_Privileged_Mode and then
                   not Mmu_Is_Enabled,
            Post => not Mmu_Is_Enabled;
 
    procedure Invalidate_TLB with
       Pre => Cpu_In_Privileged_Mode;
-
-   procedure Enable_MMU with
-      Pre => Cpu_In_Privileged_Mode and then
-             not Mmu_Is_Enabled,
-      Post => Mmu_Is_Enabled;
-
-   procedure Disable_MMU with
-      Pre => Cpu_In_Privileged_Mode,
-      Post => not Mmu_Is_Enabled;
 
    -----------------------------------------------------------------------------
    --  MAIR register declarations

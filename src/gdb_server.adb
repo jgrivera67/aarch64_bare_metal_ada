@@ -11,12 +11,14 @@
 --  https://sourceware.org/gdb/onlinedocs/gdb/Packets.html
 --
 
+with CPU;
+with CPU.Memory_Protection;
 with Utils.Number_Conversion;
+with Utils.Runtime_Log;
 
 package body Gdb_Server is
    use Utils.Number_Conversion;
-
-   Debug_Gdb_Server : constant Boolean := False;
+   use Utils.Runtime_Log;
 
    procedure Run_Gdb_Server (
       Debug_Event : CPU.Self_Hosted_Debug.Debug_Event_Type;
@@ -26,21 +28,18 @@ package body Gdb_Server is
       Gdb_Server_Obj : Gdb_Server_Type renames Gdb_Server_Objects (Cpu_Id);
       Data_Last_Index : Valid_Gdb_Packet_Data_Index_Type;
    begin
-      if CPU.Mmu_Is_Enabled then
-         CPU.Multicore.Spinlock_Acquire (Gdb_Server_Uart_Spinlock);
-      end if;
+      --  Block access to the UART console from other CPUs while the GDB server is running:
+      Utils.Lock_Console (Print_Cpu => False);
 
       if Gdb_Server_Obj.Gdb_Attached then
          --  Tell the GDB client that the target is halted at a debug exception:
          Send_Gdb_Stop_Reply_Packet (Gdb_Server_Obj);
       else
-         Utils.Lock_Console (Print_Cpu => True);
-         Utils.Print_String (ASCII.LF & "Entering self-hosted debugger on ");
-         Utils.Print_String (Debug_Event'Image);
-         Utils.Print_String (" at PC ");
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)),
-                                       End_Line => True);
-         Utils.Unlock_Console;
+         Log_Info_Msg_Begin ("Entering self-hosted debugger on ");
+         Log_Info_Msg_Part (Debug_Event'Image);
+         Log_Info_Msg_Part (" at PC ");
+         Log_Info_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)));
+         Log_Info_Msg_End;
          CPU.Self_Hosted_Debug.Enable_Self_Hosted_Debugging;
          Gdb_Server_Obj.Self_Hosted_Debug_Capabilities :=
             CPU.Self_Hosted_Debug.Get_Self_Hosted_Debug_Capabilities;
@@ -49,9 +48,12 @@ package body Gdb_Server is
       Gdb_Server_Obj.Enter_Debug_Event := Debug_Event;
       Gdb_Server_Obj.Current_PC := Current_PC;
       Gdb_Server_Obj.Resume_Target := False;
+      Gdb_Server_Obj.Gdb_Server_Aborted := False;
+      Gdb_Server_Obj.Running := True;
 
       loop
          Receive_Gdb_Packet (Gdb_Server_Obj);
+         exit when Gdb_Server_Obj.Gdb_Server_Aborted;
          Data_Last_Index := Valid_Gdb_Packet_Data_Index_Type (Gdb_Server_Obj.Gdb_Packet_Data_Length);
          Process_Incoming_Gdb_Packet (
             Gdb_Server_Obj, Gdb_Server_Obj.Gdb_Packet_Data_Buffer (1),
@@ -59,18 +61,15 @@ package body Gdb_Server is
          exit when Gdb_Server_Obj.Resume_Target;
       end loop;
 
-      if not Gdb_Server_Obj.Gdb_Attached then
+      Gdb_Server_Obj.Running := False;
+      if not Gdb_Server_Obj.Gdb_Attached or else Gdb_Server_Obj.Gdb_Server_Aborted then
          CPU.Self_Hosted_Debug.Disable_Self_Hosted_Debugging;
-         Utils.Lock_Console (Print_Cpu => True);
-         Utils.Print_String (ASCII.LF & "Exiting self-hosted debugger at PC ");
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)),
-                                         End_Line => True);
-         Utils.Unlock_Console;
+         Log_Info_Msg_Begin ("Exiting self-hosted debugger at PC ");
+         Log_Info_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Current_PC)));
+         Log_Info_Msg_End;
       end if;
 
-      if CPU.Mmu_Is_Enabled then
-         CPU.Multicore.Spinlock_Release (Gdb_Server_Uart_Spinlock);
-      end if;
+      Utils.Unlock_Console;
    end Run_Gdb_Server;
 
    --
@@ -82,10 +81,17 @@ package body Gdb_Server is
       begin
          loop
             Byte_Received := Utils.Get_Char;
-            exit when Byte_Received in ' ' .. '~';
+            exit when Byte_Received in ' ' .. '~' | Utils.Ctrl_C;
          end loop;
          return Byte_Received;
       end Get_Next_Printable_Char;
+
+      procedure Abort_Gdb_Server (Gdb_Server_Obj : in out Gdb_Server_Type) is
+      begin
+         Log_Info_Msg ("Aborting GDB server ...");
+         Gdb_Server_Obj.Gdb_Server_Aborted := True;
+         Dump_Runtime_Log;
+      end Abort_Gdb_Server;
 
       procedure Try_Receive_Gdb_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                         Receive_Ok : out Boolean) is
@@ -98,11 +104,19 @@ package body Gdb_Server is
          Gdb_Packet_Data_Length : Gdb_Packet_Data_Length_Type := 0;
          C : Character;
       begin
+         Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
          Receive_Ok := False;
          loop
             C := Get_Next_Printable_Char;
-            exit when C = '$';
+            exit when C in '$' | Utils.Ctrl_C;
          end loop;
+
+         if C = Utils.Ctrl_C then
+            --  GDB server aborted by user:
+            Utils.Print_String (ASCII.LF & "^C" & ASCII.LF);
+            Abort_Gdb_Server (Gdb_Server_Obj);
+            return;
+         end if;
 
          for I in Buffer'Range loop
             C := Get_Next_Printable_Char;
@@ -146,10 +160,10 @@ package body Gdb_Server is
    begin -- Receive_Gdb_Packet
       loop
          Try_Receive_Gdb_Packet (Gdb_Server_Obj, Receive_Ok);
-         exit when Receive_Ok;
+         exit when Receive_Ok or else Gdb_Server_Obj.Gdb_Server_Aborted;
       end loop;
 
-      if Debug_Gdb_Server then
+      if Debug_On and then not Gdb_Server_Obj.Gdb_Server_Aborted then
          Print_Gdb_Packet_Data (Gdb_Server_Obj, "Received");
       end if;
    end Receive_Gdb_Packet;
@@ -207,7 +221,7 @@ package body Gdb_Server is
          Gdb_Server_Obj.Computed_Checksum := Computed_Checksum;
       end if;
 
-      if Debug_Gdb_Server then
+      if Debug_On then
          Print_Gdb_Packet_Data (Gdb_Server_Obj, "Sent");
       end if;
    end Send_Gdb_Packet_Fragment;
@@ -216,15 +230,14 @@ package body Gdb_Server is
                                     Label : String) is
       Data_Length : Gdb_Packet_Data_Length_Type renames Gdb_Server_Obj.Gdb_Packet_Data_Length;
    begin
-      Utils.Put_Char (ASCII.LF);
-      Utils.Print_String (Label);
+      Log_Debug_Msg_Begin (Label);
       if Data_Length /= 0 then
-         Utils.Print_String (" GDB packet: '");
-         Utils.Print_String (Gdb_Server_Obj.Gdb_Packet_Data_Buffer (
+         Log_Debug_Msg_Part (" GDB packet: '");
+         Log_Debug_Msg_Part (Gdb_Server_Obj.Gdb_Packet_Data_Buffer (
             1 .. Valid_Gdb_Packet_Data_Index_Type (Data_Length)));
-         Utils.Print_String ("'" & ASCII.LF);
+         Log_Debug_Msg_End ("'");
       else
-         Utils.Print_String (" empty GDB packet" & ASCII.LF);
+         Log_Debug_Msg_End (" empty GDB packet");
       end if;
    end Print_Gdb_Packet_Data;
 
@@ -337,12 +350,26 @@ package body Gdb_Server is
             --  to hex digit pairs. This way the first hex-pair transmitted is the one
             --  corresponding to the least significant byte of the original value.
             --
-            Big_Endian_Reg_Value := CPU.Convert_To_Big_Endian (
-               Cpu_Context.Registers (Gdb_Cpu_Register_Id_To_Cpu_Register_Id (Gdb_Reg_Id)));
-            Unsigned_To_Hexadecimal_String (
-               Interfaces.Unsigned_64 (Big_Endian_Reg_Value),
-               Gdb_Server_Obj.Gdb_Packet_Data_Buffer (Buffer_Cursor .. Buffer_Cursor + 15));
-            Buffer_Cursor := @ + 16;
+            declare
+               use Interfaces;
+               Cpu_Reg_Id : constant Cpu_Register_Id_Type :=
+                  Gdb_Cpu_Register_Id_To_Cpu_Register_Id (Gdb_Reg_Id);
+            begin
+               Big_Endian_Reg_Value :=
+                  CPU.Convert_To_Big_Endian (Cpu_Context.Registers (Cpu_Reg_Id));
+               if Gdb_Reg_Id = Gdb_CPSR then
+                  Unsigned_To_Hexadecimal_String (
+                     Unsigned_32 (
+                        Unsigned_64 (Big_Endian_Reg_Value) and Unsigned_64 (Interfaces.Unsigned_32'Last)),
+                     Gdb_Server_Obj.Gdb_Packet_Data_Buffer (Buffer_Cursor .. Buffer_Cursor + 7));
+                  Buffer_Cursor := @ + 8;
+               else
+                  Unsigned_To_Hexadecimal_String (
+                     Unsigned_64 (Big_Endian_Reg_Value),
+                     Gdb_Server_Obj.Gdb_Packet_Data_Buffer (Buffer_Cursor .. Buffer_Cursor + 15));
+                  Buffer_Cursor := @ + 16;
+               end if;
+            end;
          end loop;
 
          Gdb_Server_Obj.Gdb_Packet_Data_Length := Gdb_Packet_Data_Length_Type (Buffer_Cursor - 1);
@@ -352,14 +379,15 @@ package body Gdb_Server is
 
    procedure Process_Uppercase_H_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                          Packet_Args : String) is
+      use Utils;
    begin
-      if Packet_Args = "g0" then
+      if Equal_Strings (Packet_Args, "g0") then
          --  TODO: Set Gdb_Server_Obj.Current_Hg_Thread_Id when RTOS support is added.
          Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-      elsif Packet_Args = "c-1" then
+      elsif Equal_Strings (Packet_Args, "c-1") then
          --  Future step/continue operations on all threads:
          Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-      elsif Packet_Args = "c0" then
+      elsif Equal_Strings (Packet_Args, "c0") then
          --  Resume target but keep attached to GDB:
          Gdb_Server_Obj.Resume_Target := True;
          Gdb_Server_Obj.Gdb_Attached := True;
@@ -384,6 +412,11 @@ package body Gdb_Server is
             Gdb_Server_Obj.Current_Hg_Thread_Id := Thread_Id;
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
          end;
+      else
+         Log_Debug_Msg_Begin ("Unsupported 'H' packet: '");
+         Log_Debug_Msg_Part (Packet_Args);
+         Log_Debug_Msg_End ("'");
+         Send_Gdb_Error_Packet (Gdb_Server_Obj, "E5f"); --  errno 95 (ENOTSUP)
       end if;
    end Process_Uppercase_H_Packet;
 
@@ -454,6 +487,7 @@ package body Gdb_Server is
 
    procedure Process_Lowercase_M_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                          Packet_Args : String) is
+      use CPU.Memory_Protection;
       Base_Source_Address : Integer_Address;
       Num_Source_Bytes : Integer_Address;
       Parsing_Cursor : Gdb_Packet_Data_Index_Type := Packet_Args'First;
@@ -469,6 +503,16 @@ package body Gdb_Server is
          return;
       end if;
 
+      if not Valid_Readable_Data_Address (Base_Source_Address) and then
+         not Valid_Code_Address (Base_Source_Address)
+      then
+         Log_Error_Msg ("packet 'm' invalid base address: ");
+         Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Base_Source_Address));
+         Log_Error_Msg_End;
+         Send_Gdb_Empty_Packet (Gdb_Server_Obj);
+         return;
+      end if;
+
       Parse_Packet_Arg (Gdb_Server_Obj,
                         Packet_Args,
                         Parsing_Cursor,
@@ -478,6 +522,21 @@ package body Gdb_Server is
       if not Parsing_Ok then
          return;
       end if;
+
+      declare
+         Last_Source_Address : constant Integer_Address :=
+            Base_Source_Address + Num_Source_Bytes - 1;
+      begin
+         if not Valid_Readable_Data_Address (Last_Source_Address) and then
+            not Valid_Code_Address (Last_Source_Address)
+         then
+            Log_Error_Msg ("packet 'm' invalid size: ");
+            Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Num_Source_Bytes));
+            Log_Error_Msg_End;
+            Send_Gdb_Empty_Packet (Gdb_Server_Obj);
+            return;
+         end if;
+      end;
 
       declare
          Source_Data_Buffer : Utils.Byte_Array_Type (1 .. Num_Source_Bytes)
@@ -524,7 +583,8 @@ package body Gdb_Server is
 
    procedure Process_Uppercase_M_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                          Packet_Args : String) is
-      Target_Base_Address : Integer_Address;
+      use CPU.Memory_Protection;
+      Base_Target_Address : Integer_Address;
       Num_Target_Bytes : Integer_Address;
       Parsing_Cursor : Gdb_Packet_Data_Index_Type := Packet_Args'First;
       Parsing_Ok : Boolean := False;
@@ -533,9 +593,17 @@ package body Gdb_Server is
                         Packet_Args,
                         Parsing_Cursor,
                         ',',
-                        Target_Base_Address,
+                        Base_Target_Address,
                         Parsing_Ok);
       if not Parsing_Ok then
+         return;
+      end if;
+
+      if not Valid_Writable_Data_Address (Base_Target_Address) then
+         Log_Error_Msg ("packet 'M' invalid base address: ");
+         Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Base_Target_Address));
+         Log_Error_Msg_End;
+         Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
          return;
       end if;
 
@@ -554,6 +622,19 @@ package body Gdb_Server is
          return;
       end if;
 
+      declare
+         Last_Target_Address : constant Integer_Address :=
+            Base_Target_Address + Num_Target_Bytes - 1;
+      begin
+         if not Valid_Writable_Data_Address (Last_Target_Address) then
+            Log_Error_Msg ("packet 'M' invalid size: ");
+            Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Num_Target_Bytes));
+            Log_Error_Msg_End;
+            Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
+            return;
+         end if;
+      end;
+
       if (Packet_Args'Last - Parsing_Cursor + 1) mod 2 /= 0 then
          --  Odd number of hex digits:
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
@@ -565,7 +646,7 @@ package body Gdb_Server is
       --
       declare
          Byte_Buffer : array (1 .. Num_Target_Bytes) of Interfaces.Unsigned_8
-            with Import, Address => To_Address (Target_Base_Address);
+            with Import, Address => To_Address (Base_Target_Address);
       begin
          for Byte of Byte_Buffer loop
             Utils.Number_Conversion.Hexadecimal_String_To_Unsigned (
@@ -601,8 +682,9 @@ package body Gdb_Server is
       end if;
 
       if Gdb_Reg_Id_Value > Gdb_Cpu_Register_Id_Type'Pos (Gdb_Cpu_Register_Id_Type'Last) then
-         Utils.Print_String ("*** JGR: Invalid GDB register ID: "); --???
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (Gdb_Reg_Id_Value), End_Line => True); --???
+         Log_Error_Msg_Begin ("Invalid GDB register ID: ");
+         Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Gdb_Reg_Id_Value));
+         Log_Error_Msg_End;
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
          return;
       end if;
@@ -647,12 +729,13 @@ package body Gdb_Server is
 
       Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
       declare
+         use Utils;
          Arg : String renames Packet_Args (Packet_Args'First .. Arg_End_Index - 1);
          Data_Buffer : String renames Gdb_Server_Obj.Gdb_Packet_Data_Buffer;
          Data_Cursor : Gdb_Packet_Data_Index_Type := Data_Buffer'First;
          Conversion_Length : Positive;
       begin
-         if Arg = "Supported" then
+         if Equal_Strings (Arg, "Supported") then
             Utils.Copy_String (Data_Buffer (Data_Cursor .. Data_Buffer'Last),
                                "PacketSize=",
                                Data_Cursor);
@@ -664,7 +747,7 @@ package body Gdb_Server is
                                ";swbreak+;hwbreak+;QNonStop-;QThreadEvents-",
                                Data_Cursor);
             Gdb_Server_Obj.Gdb_Packet_Data_Length := Gdb_Packet_Data_Length_Type (Data_Cursor - 1);
-         elsif Arg = "Symbol" then
+         elsif Equal_Strings (Arg, "Symbol") then
             if Arg_End_Index + 1 <= Packet_Args'Last and then
                Packet_Args (Arg_End_Index + 1) = ':'
             then
@@ -674,26 +757,23 @@ package body Gdb_Server is
                --  Send empty string
                null;
             end if;
-         elsif Arg = "Attached" then
+         elsif Equal_Strings (Arg, "Attached") then
             Data_Buffer (1) := '1';
             Gdb_Server_Obj.Gdb_Packet_Data_Length := 1;
-         elsif Arg = "C" then
+         elsif Equal_Strings (Arg, "C") then
             --  TODO: Get current thread Id when RTOS support is added
             null;
-         elsif Arg = "fThreadInfo" then
+         elsif Equal_Strings (Arg, "fThreadInfo") then
             --  TODO: Get first thread Id when RTOS support is added
             Data_Buffer (1) := 'l';
             Gdb_Server_Obj.Gdb_Packet_Data_Length := 1;
-         elsif Arg = "sThreadInfo" then
+         elsif Equal_Strings (Arg, "sThreadInfo") then
             --  TODO: Get next thread Id when RTOS support is added
             Data_Buffer (1) := 'l';
             Gdb_Server_Obj.Gdb_Packet_Data_Length := 1;
-         elsif Arg = "TStatus" then
+         elsif Equal_Strings (Arg, "TStatus") then
             Data_Buffer (1 .. 2) := "T0";
             Gdb_Server_Obj.Gdb_Packet_Data_Length := 2;
-         else
-            --  Send empty string
-            null;
          end if;
       end;
 
@@ -704,7 +784,7 @@ package body Gdb_Server is
                                          Packet_Args : String) is
       Arg_End_Index : Gdb_Packet_Data_Index_Type := Packet_Args'First;
    begin
-      if Packet_Args = "Tinit" then
+      if Utils.Equal_Strings (Packet_Args, "Tinit") then
          Send_Gdb_Ok_Packet (Gdb_Server_Obj);
          return;
       end if;
@@ -715,26 +795,32 @@ package body Gdb_Server is
       end loop;
 
       declare
+         use Utils;
          Arg : String renames Packet_Args (Packet_Args'First .. Arg_End_Index - 1);
       begin
-         if Arg = "TDP" then
+         if Equal_Strings (Arg, "TDP") then
             --  TODO: Parse `QTDP:` args to set trace point
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-         elsif Arg = "Tro" then
+         elsif Equal_Strings (Arg, "Tro") then
             --  TODO: Parse `QTro:` args
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-         elsif Arg = "TBuffer" then
+         elsif Equal_Strings (Arg, "TBuffer") then
             --  TODO: Parse `QTBuffer:` args
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-         elsif Arg = "TNotes" then
+         elsif Equal_Strings (Arg, "TNotes") then
             --  TODO: Parse `QTNotes:` args
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-         elsif Arg = "TStart" then
+         elsif Equal_Strings (Arg, "TStart") then
             --  TODO: Parse `QTStart:` args
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
-         elsif Arg = "TStop" then
+         elsif Equal_Strings (Arg, "TStop") then
             --  TODO: Parse `QTStop:` args
             Send_Gdb_Ok_Packet (Gdb_Server_Obj);
+         else
+            Log_Debug_Msg_Begin ("Unsupported 'Q' packet: '");
+            Log_Debug_Msg_Part (Packet_Args);
+            Log_Debug_Msg_End ("'");
+            Send_Gdb_Error_Packet (Gdb_Server_Obj, "E5f"); --  errno 95 (ENOTSUP)
          end if;
       end;
    end Process_Uppercase_Q_Packet;
@@ -753,28 +839,29 @@ package body Gdb_Server is
 
    procedure Process_Lowercase_V_Packet (Gdb_Server_Obj : in out Gdb_Server_Type;
                                          Packet_Args : String) is
+      use Utils;
    begin
-      if Packet_Args = "MustReplyEmpty" then
-         --  Send empty string:
-         Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
-         Send_Gdb_Packet (Gdb_Server_Obj);
-      elsif Packet_Args = "Kill;a" then
+      if Equal_Strings (Packet_Args, "MustReplyEmpty") then
+         Send_Gdb_Empty_Packet (Gdb_Server_Obj);
+      elsif Equal_Strings (Packet_Args, "Kill;a") then
          --  TODO: Resetting target not supported yet (need to implement 'SYSTEM_RESET' PSCI command
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E5f"); --  errno 95 (ENOTSUP)
-      elsif Packet_Args = "Cont?" then
+      elsif Equal_Strings (Packet_Args, "Cont?") then
          --  TODO: Non-stop functionality not fully supported yet. Send empty string:
-         Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
-         Send_Gdb_Packet (Gdb_Server_Obj);
-      elsif Packet_Args = "Cont;c" then
+         Send_Gdb_Empty_Packet (Gdb_Server_Obj);
+      elsif Equal_Strings (Packet_Args, "Cont;c") then
          --  Resume target but keep attached to GDB:
          Gdb_Server_Obj.Resume_Target := True;
          Gdb_Server_Obj.Gdb_Attached := True;
-      elsif Packet_Args = "Cont;s" then
+      elsif Equal_Strings (Packet_Args, "Cont;s") then
          --  TODO: properly parse "Cont;s:<thread id>"
          CPU.Self_Hosted_Debug.Enable_Single_Step_Exception;
          Gdb_Server_Obj.Resume_Target := True;
          Gdb_Server_Obj.Gdb_Attached := True;
       else
+         Log_Debug_Msg_Begin ("Unsupported 'v' packet: '");
+         Log_Debug_Msg_Part (Packet_Args);
+         Log_Debug_Msg_End ("'");
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E5f"); --  errno 95 (ENOTSUP)
       end if;
    end Process_Lowercase_V_Packet;
@@ -812,8 +899,7 @@ package body Gdb_Server is
          --  We say, no, by replying with an empty packet. This way, the GDB
          --  client will fall back to use an 'M' packet.
          --
-         Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
-         Send_Gdb_Packet (Gdb_Server_Obj);
+         Send_Gdb_Empty_Packet (Gdb_Server_Obj);
       else
          --  TODO: Add support for binary payload data.
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
@@ -1128,4 +1214,10 @@ package body Gdb_Server is
       Send_Gdb_Data_Packet (Gdb_Server_Obj, "OK");
    end Send_Gdb_Ok_Packet;
 
+   procedure Send_Gdb_Empty_Packet (Gdb_Server_Obj : in out Gdb_Server_Type) is
+   begin
+      --  Send empty string:
+      Gdb_Server_Obj.Gdb_Packet_Data_Length := 0;
+      Send_Gdb_Packet (Gdb_Server_Obj);
+   end Send_Gdb_Empty_Packet;
 end Gdb_Server;

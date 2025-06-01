@@ -8,13 +8,15 @@
 with Board;
 with CPU;
 with CPU.Memory_Protection;
-with Utils;
+with Gdb_Server;
+with Utils.Runtime_Log;
 with Interfaces;
 with System.Storage_Elements;
 with GNAT.Source_Info;
 
 procedure App_Main is
    use ASCII;
+   use Utils.Runtime_Log;
    Code_Address : constant System.Address := CPU.Get_Reset_Handler_Address;
    C : Character;
 
@@ -34,6 +36,10 @@ procedure App_Main is
    end Cause_Data_Abort_Null_Pointer_Write;
 
 begin
+   Gdb_Server.Debug_On := True;
+   CPU.Memory_Protection.Debug_On := True;
+   Set_Console_Logging_Level (DEBUG);
+
    Utils.Print_String (
       LF & Board.Board_Name & " AArch64 Memory Protection - built on " &
       GNAT.Source_Info.Compilation_Date &
@@ -43,7 +49,7 @@ begin
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);
 
-   CPU.Memory_Protection.Configure_Global_Regions;
+   CPU.Memory_Protection.Initialize;
 
    loop
       Utils.Print_String (LF & "1. Data abort for unmapped address write" & LF);

@@ -10,10 +10,13 @@
 
 with CPU;
 with CPU.Interrupt_Handling;
+with Utils.Runtime_Log;
 
 package body Interrupt_Controller_Driver with
   SPARK_Mode => Off
 is
+   use Utils.Runtime_Log;
+
    ----------------------------------------------------------------------------
    --  Public Subprograms
    ----------------------------------------------------------------------------
@@ -45,9 +48,14 @@ is
             pragma Assert (
                Max_Number_Interrupt_Sources <= Interfaces.Unsigned_16 (Max_Num_Interrupts_Supported));
          else
-            Utils.Print_String ("*** GICD_TYPER.ITLinesNumber is 0" & ASCII.LF); --???
             Max_Number_Interrupt_Sources := Max_Num_Interrupts_Supported;
          end if;
+
+         Log_Debug_Msg_Begin ("GIC Initialized: Max number of interrupt sources ");
+         Log_Debug_Value_Decimal (Interfaces.Unsigned_32 (Max_Number_Interrupt_Sources));
+         Log_Debug_Msg_Part (", GICD_TYPER.ITLinesNumber ");
+         Log_Debug_Value_Decimal (Interfaces.Unsigned_32 (GICD_TYPER_Value.ITLinesNumber));
+         Log_Debug_Msg_End;
 
          --
          --  Disable and clear all interrupts:
@@ -130,6 +138,7 @@ is
       Old_Flags :=
          CPU.Multicore.Atomic_Fetch_Or (Interrupt_Controller_Obj.Per_Cpu_Initialized_Flags,
                                         Bit_Mask (Bit_Index_Type (Cpu_Id)));
+      Utils.Runtime_Log.Log_Info_Msg ("Interrupt controller initialized");
    end Initialize;
 
    procedure Configure_Internal_Interrupt
@@ -410,11 +419,15 @@ is
             Interrupt_Handler.Interrupt_Handler_Entry_Point (Interrupt_Handler.Interrupt_Handler_Arg);
          end;
       else
-         Utils.Print_String ("*** Special ");
-         Utils.Print_String (
+         Utils.Lock_Console (Print_Cpu => True);
+         Log_Debug_Msg_Begin ("*** Special ");
+         Log_Debug_Msg_Part (
             (if Cpu_Interrupt_Line = Cpu_Interrupt_Fiq then "FIQ" else "IRQ"));
-         Utils.Print_String (" interrupt ");
-         Utils.Print_Number_Decimal (Interfaces.Unsigned_32 (Interrupt_Id), End_Line => True);
+         Log_Debug_Msg_Part (" interrupt ");
+         Log_Debug_Value_Decimal (Interfaces.Unsigned_32 (Interrupt_Id));
+         Log_Debug_Msg_End;
+         Utils.Unlock_Console;
+
          --
          --  NOTE: These INTIDs do not require an end of interrupt or deactivation.
          --

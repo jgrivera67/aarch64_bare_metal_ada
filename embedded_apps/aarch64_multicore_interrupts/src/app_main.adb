@@ -26,7 +26,7 @@ procedure App_Main is
 begin
    --
    --  NOTE: For Raspberry PI 4, we need ot start secondary cores before calling
-   --  `Configure_Global_Regions`, as the spin tables are in page 0, which
+   --  `CPU.Memory_Protection.Initialize`, as the spin tables are in page 0, which
    --  cannot be written after enabling the MMU.
    --
    --  For CPU 0, App_Main is invoked from the the GNAT-generated main
@@ -37,7 +37,7 @@ begin
       CPU.Multicore.Start_Secondary_Cpus;
    end if;
 
-   CPU.Memory_Protection.Configure_Global_Regions;
+   CPU.Memory_Protection.Initialize;
    Timer_Driver.Initialize;
    CPU.Interrupt_Handling.Initialize;
 
@@ -48,7 +48,7 @@ begin
       Utils.Unlock_Console;
    end if;
 
-   Utils.Lock_Console (Print_Cpu => True);
+   Utils.Lock_Console;
    Utils.Print_String (
       Board.Board_Name & " AArch64 Multicore Interrupts - built on " &
       GNAT.Source_Info.Compilation_Date &

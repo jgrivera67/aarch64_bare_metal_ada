@@ -17,8 +17,8 @@ export BUILD_PREFIX="${HOME}/opt/cross/${BUILD_TARGET}"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/mpc/lib
 
 # The host target triplet.
-#export HOST="x86_64-pc-linux-gnu"
-export HOST="aarch64-linux-gnu"
+export HOST="x86_64-pc-linux-gnu"
+#export HOST="aarch64-linux-gnu"
 
 # Update the PATH variable for this script so it includes the build directory.
 # This will add our newly built cross-compiler to the PATH.

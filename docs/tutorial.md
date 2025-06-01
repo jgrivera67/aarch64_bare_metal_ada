@@ -42,9 +42,9 @@ laptop to the Raspberry PI's UART0 serial port.
 ## How to build the GNAT cross-tool chain from sources for bare-metal AArch64
 
 ### Download Sources
-- Download latest binutils sources: https://www.gnu.org/software/binutils/
-- Download latest gcc sources: https://www.gnu.org/software/gcc/
-- Download latest gdb sources: https://www.gnu.org/software/gdb/
+- Download latest binutils sources: https://www.gnu.org/software/binutils or https://ftp.gnu.org/gnu/binutils
+- Download latest gcc sources: https://www.gnu.org/software/gcc or https://ftp.gnu.org/gnu/gcc
+- Download latest gdb sources: https://www.gnu.org/software/gdb or https://ftp.gnu.org/gnu/gdb
 
 ### Building gnat cross-compiler for bare-metal AArch64
 Follow the steps described in https://wiki.osdev.org/GNAT_Cross-Compiler, making corresponding changes for AArch64:

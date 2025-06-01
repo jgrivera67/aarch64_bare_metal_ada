@@ -4,6 +4,7 @@
 --  SPDX-License-Identifier: Apache-2.0
 --
 
+with Timer_Driver;
 with System;
 with Interfaces;
 
@@ -11,7 +12,7 @@ package Uart_Boot_Loader_Server is
    procedure Load_Image_Over_Uart (Load_Address : System.Address);
 
 private
-   Receive_Timeout_Usec : constant Interfaces.Unsigned_64 := 1_000_000;  --  1s
+   Receive_Timeout_Usec : constant Timer_Driver.Delta_Time_Us_Type := 1_000_000;  --  1s
 
    type Maybe_Checksum_Type is record
       Valid : Boolean := False;

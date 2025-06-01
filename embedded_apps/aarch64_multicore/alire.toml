@@ -1,5 +1,5 @@
 name = "aarch64_multicore"
-description = "AArch64 MMU test program"
+description = "AArch64 Multicore test program"
 version = "0.1.0-dev"
 
 authors = ["J. German Rivera"]

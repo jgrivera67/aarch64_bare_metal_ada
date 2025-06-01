@@ -37,6 +37,7 @@ package CPU.Self_Hosted_Debug with SPARK_Mode => On is
                              Software_Breakpoint_Event,
                              Watchpoint_Event,
                              Single_Step_Event,
+                             Error_Exception_Event,
                              Dummy_Debug_Event);
 
    procedure Run_Debugger (Debug_Event : Debug_Event_Type)

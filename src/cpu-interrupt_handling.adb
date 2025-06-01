@@ -11,7 +11,7 @@
 
 with CPU.Multicore;
 with CPU.Self_Hosted_Debug;
-with Utils;
+with Utils.Runtime_Log;
 with System.Machine_Code;
 
 package body CPU.Interrupt_Handling is
@@ -24,32 +24,50 @@ package body CPU.Interrupt_Handling is
    end Initialize;
 
    procedure Print_Exception_Info (Exception_Description : String) is
+      use Utils.Runtime_Log;
       Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       ESR_EL1_Value : constant ESR_EL1_Type := Get_ESR_EL1;
       FAR_EL1_Value : constant Interfaces.Unsigned_64 := Get_FAR_EL1;
       ELR_EL1_Value : constant Interfaces.Unsigned_64 := Get_ELR_EL1;
    begin
-      Utils.Lock_Console (Print_Cpu => False);
-      Utils.Print_String (LF & "*** CPU");
-      Utils.Print_Number_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
-      Utils.Print_String (" EL1 ");
-      Utils.Print_String (Exception_Description);
-      Utils.Print_String (" (Exception class: ");
-      Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (ESR_EL1_Value.EC'Enum_Rep));
-      Utils.Print_String (", ESR_EL1: ");
-      Utils.Print_Number_Hexadecimal (ESR_EL1_Value.Value);
-      Utils.Print_String (", FAR_EL1: ");
-      Utils.Print_Number_Hexadecimal (FAR_EL1_Value);
-      Utils.Print_String (", faulting PC: ");
-      Utils.Print_Number_Hexadecimal (ELR_EL1_Value);
-      Utils.Print_String (")" & LF);
-      Utils.Unlock_Console;
+      Log_Error_Msg_Begin ("*** EL1 ");
+      Log_Error_Msg_Part (Exception_Description);
+      Log_Error_Msg_Part (" (Exception class: ");
+      Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (ESR_EL1_Value.EC'Enum_Rep));
+      Log_Error_Msg_Part (", ESR_EL1: ");
+      Log_Error_Value_Hexadecimal (ESR_EL1_Value.Value);
+      Log_Error_Msg_Part (", FAR_EL1: ");
+      Log_Error_Value_Hexadecimal (FAR_EL1_Value);
+      Log_Error_Msg_Part (", faulting PC: ");
+      Log_Error_Value_Hexadecimal (ELR_EL1_Value);
+
+      --  Dump CPU registers:
+      declare
+         Interrupt_Nesting : constant Interrupt_Nesting_Type := Get_Cpu_Interrupt_Nesting (Cpu_Id);
+         Stack_Pointer : constant System.Address :=
+            Get_Interrupt_Nesting_Stack_Pointer (Interrupt_Nesting);
+         Cpu_Context : constant Cpu_Context_Type with Import, Address => Stack_Pointer;
+      begin
+         pragma Assert (Cpu_Context.Registers (SP) = CPU.Cpu_Register_Type (To_Integer (Stack_Pointer)));
+         Log_Error_Msg_Part (")" & LF & HT & "CPU Registers:" & LF & HT);
+         for Cpu_Reg_Id in Cpu_Register_Id_Type loop
+            Log_Error_Msg_Part (Cpu_Reg_Id'Image);
+            Log_Error_Msg_Part (" = ");
+            Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (
+               Cpu_Context.Registers (Cpu_Reg_Id)));
+            if Cpu_Reg_Id < Cpu_Register_Id_Type'Last then
+               Log_Error_Msg_Part (LF & HT);
+            end if;
+         end loop;
+      end;
+      Log_Error_Msg_End;
    end Print_Exception_Info;
 
    procedure Handle_EL1_Error_Exception (Exception_Description : String) with No_Return is
    begin
       Print_Exception_Info (Exception_Description);
-      raise Program_Error with Exception_Description;
+      CPU.Self_Hosted_Debug.Run_Debugger (CPU.Self_Hosted_Debug.Error_Exception_Event);
+      Utils.System_Crash;
    end Handle_EL1_Error_Exception;
 
    procedure Handle_EL1_Debug_Exception (
@@ -287,7 +305,7 @@ package body CPU.Interrupt_Handling is
       Cpu_Context : constant Cpu_Context_Type with
          Import, Address => Saved_Stack_Pointer;
    begin
-      return To_Address (Integer_Address (Cpu_Context.Registers (ELR_ELx)));
+      return To_Address (Integer_Address (Cpu_Context.Registers (ELR_ELx_Or_PC)));
    end Get_Saved_PC;
 
    procedure Set_Saved_PC (PC_Value : System.Address) is
@@ -298,7 +316,7 @@ package body CPU.Interrupt_Handling is
       Cpu_Context : Cpu_Context_Type with
          Import, Address => Saved_Stack_Pointer;
    begin
-      Cpu_Context.Registers (ELR_ELx) := Cpu_Register_Type (To_Integer (PC_Value));
+      Cpu_Context.Registers (ELR_ELx_Or_PC) := Cpu_Register_Type (To_Integer (PC_Value));
    end Set_Saved_PC;
 
 end CPU.Interrupt_Handling;

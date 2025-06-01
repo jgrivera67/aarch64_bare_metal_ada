@@ -59,17 +59,14 @@ is
 
    procedure Spinlock_Acquire (Spinlock : in out Spinlock_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Mmu_Is_Enabled and then
-                  Spinlock_Owner (Spinlock) /= Get_Cpu_Id,
+                  Cpu_Is_Multicore_Synchronization_Ready,
            Post => Spinlock_Owner (Spinlock) = Get_Cpu_Id and then
                    Cpu_Interrupting_Disabled;
 
    procedure Spinlock_Release (Spinlock : in out Spinlock_Type)
       with Pre => Cpu_In_Privileged_Mode and then
-                  Mmu_Is_Enabled and then
                   Spinlock_Owner (Spinlock) = Get_Cpu_Id and then
-                  Cpu_Interrupting_Disabled,
-           Post => Spinlock_Owner (Spinlock) /= Get_Cpu_Id;
+                  Cpu_Interrupting_Disabled;
 
 private
 
@@ -82,6 +79,8 @@ private
    function Atomic_Counter_Initializer (Value : Cpu_Register_Type) return Atomic_Counter_Type is
       ((Counter => Value));
 
+   type Recursive_Acquire_Count_Type is range 0 .. 32;
+
    --
    --  Fair spinlock object
    --
@@ -92,6 +91,8 @@ private
       Now_Serving : Cpu_Register_Type := 0 with Atomic;
       --  CPU interrupt mask before interrupts were disabled when acquiring the spinlock.
       Old_Cpu_Interrupting : Cpu_Register_Type := 0;
+      --  Counter of recursive/nested Spinlock_Acquire() callsi by the owning CPU
+      Recursive_Acquire_Count : Recursive_Acquire_Count_Type := 0;
       --  Inter-cluster CPU core ID
       Owner : Cpu_Core_Id_Type := Invalid_Cpu_Core_Id;
    end record with Alignment => Cache_Line_Size_In_Bytes;

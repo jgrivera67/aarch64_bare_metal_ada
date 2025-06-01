@@ -43,7 +43,7 @@ package CPU is
    Num_External_Interrupts : constant := 480;
 
    function Get_Call_Address return System.Address with
-      Inline_Always => False, Suppress => All_Checks;
+      Inline_Always => True, Suppress => All_Checks;
 
    function Get_Reset_Handler_Address return System.Address;
 
@@ -62,6 +62,9 @@ package CPU is
    function Caches_Are_Enabled return Boolean
       with Inline_Always,
            Pre => Cpu_In_Privileged_Mode;
+
+   function Cpu_Is_Multicore_Synchronization_Ready return Boolean is
+      (Mmu_Is_Enabled and then Caches_Are_Enabled);
 
    function Cpu_Interrupting_Disabled return Boolean with
       Inline_Always, Suppress => All_Checks;

@@ -11,6 +11,7 @@
 
 with Interrupt_Controller_Driver;
 with CPU.Interrupt_Handling;
+with Utils.Runtime_Log;
 
 package body Uart_Driver is
 
@@ -121,6 +122,7 @@ package body Uart_Driver is
       --  Enable UART interrupt in the GIC:
       Interrupt_Controller_Driver.Enable_External_Interrupt (UART0_Interrupt_Id);
       Enable_Uart;
+      Utils.Runtime_Log.Log_Info_Msg ("UART initialized");
    end Initialize_Uart;
 
    procedure Put_Char (C : Character) is
@@ -183,6 +185,12 @@ package body Uart_Driver is
 
       return Result;
    end Receive_Byte_If_Any;
+
+   function Input_Interrupt_Enabled return Boolean is
+      UARTIMSC_Value : constant UARTIMSC_Register := UART0_Periph.UARTIMSC;
+   begin
+      return UARTIMSC_Value.RXIM = 2#1#;
+   end Input_Interrupt_Enabled;
 
    procedure Uart_Rx_Interrupt_Handler (Arg : System.Address) is
       Uart_Device_Obj : Uart_Device_Type with Import, Address => Arg;

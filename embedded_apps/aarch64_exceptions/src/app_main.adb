@@ -7,13 +7,15 @@
 
 with Board;
 with CPU;
-with Utils;
+with Gdb_Server;
+with Utils.Runtime_Log;
 with Interfaces;
 with System.Storage_Elements;
 with GNAT.Source_Info;
 
 procedure App_Main is
    use ASCII;
+   use Utils.Runtime_Log;
    Code_Address : constant System.Address := CPU.Get_Reset_Handler_Address;
    C : Character;
 
@@ -41,6 +43,8 @@ procedure App_Main is
    end Raise_Ada_Exception;
 
 begin
+   Gdb_Server.Debug_On := True;
+   Set_Console_Logging_Level (DEBUG);
    Utils.Print_String (
       LF & Board.Board_Name & " AArch64 Exceptions - built on " &
       GNAT.Source_Info.Compilation_Date &

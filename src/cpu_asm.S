@@ -31,6 +31,7 @@ park_cpu:
      * can execute instructions where the UART boot loader is located.
      */
     msr sctlr_el1, xzr
+    isb sy
 
     /*
      * Jump back to UART boot loader server:

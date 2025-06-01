@@ -24,7 +24,11 @@ reset_handler:
     cmp    x0, #PSTATE_EL_EL2_MASK
     bne    reset_handler_el1
 
+    /*
+     * Initialize SCTLR_EL1 to have MMU and caches disabled:
+     */
     msr sctlr_el1, xzr
+    isb sy
 
     /*
      * Set the execution state for EL1 to be AArch64:

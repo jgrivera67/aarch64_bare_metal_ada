@@ -23,4 +23,5 @@ begin
    Utils.Print_Number_Hexadecimal (
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);
+   CPU.Park_Cpu;
 end App_Main;

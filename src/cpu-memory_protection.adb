@@ -13,24 +13,26 @@ with Board;
 with CPU.Caches;
 with CPU.Interrupt_Handling;
 with CPU.Multicore;
-with Linker_Memory_Map;
-with Utils;
+with Utils.Runtime_Log;
 with System.Machine_Code;
 
 package body CPU.Memory_Protection is
+   use Utils.Runtime_Log;
 
-   Debug_On : constant Boolean := False;
-
-   procedure Configure_Global_Regions is
+   procedure Initialize is
       Cpu_Id : constant Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
    begin
-      if Debug_On then
-         Utils.Print_String ("Configuring MMU translation tables ..." & ASCII.LF);
+      if CPU.Caches_Are_Enabled then
+         CPU.Caches.Disable_Caches;
       end if;
 
-      CPU.Caches.Disable_Caches;
-      Disable_MMU;
-      Initialize;
+      if Mmu_Is_Enabled then
+         Disable_MMU;
+      end if;
+
+      Initialize_MMU;
+
+      Log_Debug_Msg ("Configuring MMU translation tables ...");
 
       --
       --  Configure global text region:
@@ -125,9 +127,9 @@ package body CPU.Memory_Protection is
 
       Enable_MMU;
       CPU.Caches.Enable_Caches;
-   end Configure_Global_Regions;
+   end Initialize;
 
-   procedure Initialize is
+   procedure Initialize_MMU is
       procedure Load_Memory_Attributes_Lookup_Table is
          MAIR_Value : MAIR_Type;
       begin
@@ -192,7 +194,7 @@ package body CPU.Memory_Protection is
          TTBR0_Value.Value := Interfaces.Unsigned_64 (To_Integer (L1_Table'Address));
          Set_TTBR0 (TTBR0_Value);
       end;
-   end Initialize;
+   end Initialize_MMU;
 
    procedure Initialize_Translation_Table_Tree (
       Translation_Table_Tree : out Translation_Table_Tree_Type;
@@ -617,15 +619,15 @@ package body CPU.Memory_Protection is
       begin
          case Permissions is
             when Read_Write =>
-               Utils.Print_String ("rw-");
+               Log_Debug_Msg_Part ("rw-");
             when Read_Only =>
-               Utils.Print_String ("r--");
+               Log_Debug_Msg_Part ("r--");
             when Read_Execute =>
-               Utils.Print_String ("r-x");
+               Log_Debug_Msg_Part ("r-x");
             when Read_Write_Execute =>
-               Utils.Print_String ("rwx");
+               Log_Debug_Msg_Part ("rwx");
             when None =>
-               Utils.Print_String ("---");
+               Log_Debug_Msg_Part ("---");
          end case;
       end Print_Permissions;
 
@@ -634,38 +636,41 @@ package body CPU.Memory_Protection is
       begin
          case Caching_Attributes is
             when Device_Memory_Mapped_Io =>
-               Utils.Print_String ("device-memory");
+               Log_Debug_Msg_Part ("device-memory");
             when Normal_Memory_Non_Cacheable =>
-               Utils.Print_String ("normal-memory-non-cacheable");
+               Log_Debug_Msg_Part ("normal-memory-non-cacheable");
             when Normal_Memory_Write_Through_Cacheable =>
-               Utils.Print_String ("normal-memory-write-through-cacheable");
+               Log_Debug_Msg_Part ("normal-memory-write-through-cacheable");
             when Normal_Memory_Write_Back_Cacheable =>
-               Utils.Print_String ("normal-memory-write-back-cacheable");
+               Log_Debug_Msg_Part ("normal-memory-write-back-cacheable");
          end case;
       end Print_Caching_Attributes;
    begin
-      Utils.Print_String ("Level ");
-      Utils.Print_Number_Decimal (Translation_Table_Level'Enum_Rep);
-      Utils.Print_String (" translation (");
-      Utils.Print_Number_Hexadecimal (Translation_Table_Entry.Value);
-      Utils.Print_String (")");
+      Log_Debug_Msg_Begin ("Level ");
+      Log_Debug_Value_Decimal (Translation_Table_Level'Enum_Rep);
+      Log_Debug_Msg_Part (" translation (");
+      Log_Debug_Value_Hexadecimal (Translation_Table_Entry.Value);
+      Log_Debug_Msg_Part (")");
       if Start_Virtual_Address = Start_Physical_Address then
-         Utils.Print_String (" VA=PA=");
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Start_Physical_Address)));
+         Log_Debug_Msg_Part (" VA=PA=");
+         Log_Debug_Value_Hexadecimal (
+            Interfaces.Unsigned_64 (To_Integer (Start_Physical_Address)));
       else
-         Utils.Print_String (" VA=");
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Start_Virtual_Address)));
-         Utils.Print_String (" PA=");
-         Utils.Print_Number_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Start_Physical_Address)));
+         Log_Debug_Msg_Part (" VA=");
+         Log_Debug_Value_Hexadecimal (
+            Interfaces.Unsigned_64 (To_Integer (Start_Virtual_Address)));
+         Log_Debug_Msg_Part (" PA=");
+         Log_Debug_Value_Hexadecimal (
+            Interfaces.Unsigned_64 (To_Integer (Start_Physical_Address)));
       end if;
 
-      Utils.Print_String (" Privileged Perms=");
+      Log_Debug_Msg_Part (" Privileged Perms=");
       Print_Permissions (Privileged_Permissions);
-      Utils.Print_String (" Unprivileged Perms=");
+      Log_Debug_Msg_Part (" Unprivileged Perms=");
       Print_Permissions (Unprivileged_Permissions);
-      Utils.Print_String (" Caching Attrs=");
+      Log_Debug_Msg_Part (" Caching Attrs=");
       Print_Caching_Attributes (Caching_Attributes);
-      Utils.Put_Char (ASCII.LF);
+      Log_Debug_Msg_End;
    end Print_Translation_Table_Leaf_Entry;
 
    procedure Allocate_Translation_Table (
@@ -684,34 +689,6 @@ package body CPU.Memory_Protection is
       Translation_Table_Tree.Tables_Pointer.all (Translation_Table_Id) := [others => <>];
       Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);
    end Allocate_Translation_Table;
-
-   procedure Handle_Prefetch_Abort_Exception is
-   begin
-      null; --  TODO: Implement this
-
-      --  HiRTOS_Low_Level_Debug_Interface.Print_String (
-      --     "*** EL1 Prefetch abort: " & Fault_Name_Pointer_Array (IFSR_Value.Status).all & "  (faulting PC: ");
-      --  HiRTOS_Low_Level_Debug_Interface.Print_Number_Hexadecimal (Interfaces.Unsigned_32 (IFAR_Value));
-      --  HiRTOS_Low_Level_Debug_Interface.Print_String (")" & ASCII.LF);
-
-      raise Program_Error;
-   end Handle_Prefetch_Abort_Exception;
-
-   procedure Handle_Data_Abort_Exception is
-      --  Faulting_PC : constant Integer_Address :=
-      --     To_Integer (Interrupt_Handling.Get_Interrupted_PC) - 8;
-   begin
-      null; --  TODO: Implement this
-
-      --  HiRTOS_Low_Level_Debug_Interface.Print_String (
-      --     "*** EL1 Data abort: " & Fault_Name_Pointer_Array (DFSR_Value.Status).all & "  (faulting PC: ");
-      --  HiRTOS_Low_Level_Debug_Interface.Print_Number_Hexadecimal (Interfaces.Unsigned_32 (Faulting_PC));
-      --  HiRTOS_Low_Level_Debug_Interface.Print_String (", fault data address: ");
-      --  HiRTOS_Low_Level_Debug_Interface.Print_Number_Hexadecimal (Interfaces.Unsigned_32 (DFAR_Value));
-      --  HiRTOS_Low_Level_Debug_Interface.Print_String (")" & ASCII.LF);
-
-      raise Program_Error;
-   end Handle_Data_Abort_Exception;
 
    function Get_MAIR return MAIR_Type is
       MAIR_Value : MAIR_Type;
@@ -828,11 +805,8 @@ package body CPU.Memory_Protection is
       SCTLR_Value.SPAN := Set_Privileged_Access_Never_Disabled;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
+      Log_Info_Msg ("MMU enabled");
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);
-
-      if Debug_On then
-         Utils.Print_String ("MMU enabled" & ASCII.LF);
-      end if;
    end Enable_MMU;
 
    procedure Disable_MMU is
@@ -845,6 +819,7 @@ package body CPU.Memory_Protection is
       SCTLR_Value.M := MMU_Disabled;
       Set_SCTLR_EL1 (SCTLR_Value);
       Strong_Memory_Barrier;
+      Log_Info_Msg ("MMU disabled");
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting_State);
    end Disable_MMU;
 

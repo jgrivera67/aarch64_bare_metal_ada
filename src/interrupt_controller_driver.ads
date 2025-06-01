@@ -173,12 +173,10 @@ private
    end record;
 
    --
-   --  Number of SPI INTIDs that the GIC Distributor supports. The valid values
-   --  for this field range from 1 to 30, depending on the number of SPIs
-   --  configured.
+   --  Number of SPI INTIDs that the GIC Distributor supports.
    --  Valid interrupt INTID range is 0 to 32*(ITLinesNumber + 1) - 1.
    --
-   type ITLinesNumber_Type is range 1 .. 30 with
+   type ITLinesNumber_Type is range 0 .. 30 with
      Size => 5;
 
    type GICD_TYPER_Type is record

@@ -31,7 +31,7 @@ begin
       Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
       End_Line => True);
 
-   CPU.Memory_Protection.Configure_Global_Regions;
+   CPU.Memory_Protection.Initialize;
    Timer_Driver.Initialize;
    CPU.Interrupt_Handling.Initialize;
 

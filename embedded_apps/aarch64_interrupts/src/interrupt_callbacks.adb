@@ -4,6 +4,7 @@
 --
 --  SPDX-License-Identifier: Apache-2.0
 --
+with CPU;
 with Utils;
 
 package body Interrupt_Callbacks is
@@ -28,6 +29,12 @@ package body Interrupt_Callbacks is
       Utils.Print_String (" times (byte received: ");
       Utils.Put_Char (Character'Val (Byte_Received));
       Utils.Print_String (")" & ASCII.LF);
+
+      if Character'Val (Byte_Received) = Utils.Ctrl_C then
+         --  Enter the self-hosted debugger:
+         Utils.Print_String (ASCII.LF & "^C" & ASCII.LF);
+         CPU.Break_Point;
+      end if;
    end Uart_Rx_Interrupt_Callback;
 
 end Interrupt_Callbacks;

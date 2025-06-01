@@ -43,6 +43,8 @@ package Uart_Driver is
 
    function Receive_Byte_If_Any return Maybe_Byte_Type;
 
+   function Input_Interrupt_Enabled return Boolean;
+
 private
 
    use type System.Address;

@@ -96,6 +96,11 @@
  */
 #define CPUECTLR_EL1_SMPEN_MASK BIT(6u)
 
+/*
+ * Bit masks for SCTLR_EL1 register bit fields
+ */
+#define SCTLR_EL1_A_MASK BIT(1u)
+
 #define GUARDED_ISR_STACK_SIZE_IN_BYTES (ISR_STACK_SIZE_IN_BYTES + PAGE_SIZE_IN_BYTES)
 
 /*

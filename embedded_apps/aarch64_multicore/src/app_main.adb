@@ -27,9 +27,9 @@ begin
       CPU.Multicore.Start_Secondary_Cpus;
    end if;
 
-   CPU.Memory_Protection.Configure_Global_Regions;
+   CPU.Memory_Protection.Initialize;
    loop
-      Utils.Lock_Console (Print_Cpu => True);
+      Utils.Lock_Console;
       Utils.Print_String (
          Board.Board_Name & " AArch64 Multicore - built on " &
          GNAT.Source_Info.Compilation_Date &

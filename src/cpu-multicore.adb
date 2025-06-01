@@ -10,6 +10,7 @@
 --
 
 with Board;
+with Utils.Runtime_Log;
 with CPU.Interrupt_Handling;
 with System.Machine_Code;
 with Interfaces;
@@ -40,10 +41,14 @@ package body CPU.Multicore is
    end Send_Multicore_Event;
 
    procedure Start_Secondary_Cpus is
+      use Utils.Runtime_Log;
       Reset_Handler_Address : constant System.Address := Get_Reset_Handler_Address;
    begin
       for Cpu_Id in Secondary_Cpu_Core_Id_Type loop
          Board.Start_Secondary_Cpu (Cpu_Id, Reset_Handler_Address);
+         Log_Info_Msg_Begin ("CPU");
+         Log_Info_Value_Decimal (Interfaces.Unsigned_32 (Cpu_Id));
+         Log_Info_Msg_End (" started");
       end loop;
    end Start_Secondary_Cpus;
 
@@ -87,8 +92,8 @@ package body CPU.Multicore is
    function Atomic_Operation (Atomic_Operator : Atomic_Operator_Type;
                               Atomic_Counter : in out Atomic_Counter_Type;
                               Value : Cpu_Register_Type) return Cpu_Register_Type
-    with Inline_Always --???,
-         --???Pre => Mmu_Is_Enabled
+    with Inline_Always,
+         Pre => Cpu_Is_Multicore_Synchronization_Ready
    is
       Old_Value : Cpu_Register_Type;
       New_Value : Cpu_Register_Type;
@@ -151,20 +156,34 @@ package body CPU.Multicore is
       Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
       Old_Cpu_Interrupting : constant Cpu_Register_Type :=
          CPU.Interrupt_Handling.Disable_Cpu_Interrupting;
-      My_Ticket : constant Cpu_Register_Type := Atomic_Fetch_Add (Spinlock.Next_Ticket, 1);
    begin
-      while Spinlock.Now_Serving /= My_Ticket loop
-         Wait_For_Multicore_Event;
-      end loop;
+      if Spinlock_Owner (Spinlock) = Cpu_Id then
+         Spinlock.Recursive_Acquire_Count := @ + 1;
+         CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting);
+         return;
+      end if;
 
-      pragma Assert (Spinlock.Owner = Invalid_Cpu_Core_Id);
-      Spinlock.Owner := Cpu_Id;
-      Spinlock.Old_Cpu_Interrupting := Old_Cpu_Interrupting;
-      Memory_Barrier;
+      declare
+         My_Ticket : constant Cpu_Register_Type := Atomic_Fetch_Add (Spinlock.Next_Ticket, 1);
+      begin
+         while Spinlock.Now_Serving /= My_Ticket loop
+            Wait_For_Multicore_Event;
+         end loop;
+
+         pragma Assert (Spinlock.Owner = Invalid_Cpu_Core_Id);
+         Spinlock.Owner := Cpu_Id;
+         Spinlock.Old_Cpu_Interrupting := Old_Cpu_Interrupting;
+         Memory_Barrier;
+      end;
    end Spinlock_Acquire;
 
    procedure Spinlock_Release (Spinlock : in out Spinlock_Type) is
    begin
+      if Spinlock.Recursive_Acquire_Count > 0 then
+         Spinlock.Recursive_Acquire_Count := @ - 1;
+         return;
+      end if;
+
       Memory_Barrier;
       Spinlock.Owner := Invalid_Cpu_Core_Id;
       Spinlock.Now_Serving := @ + 1;

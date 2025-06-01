@@ -170,7 +170,7 @@ interrupt_vector_table:
       mov sp, x0
 
       /*
-       * Restore ELR_EL1 and SPSR_EL1 on the stack:
+       * Restore ELR_EL1 and SPSR_EL1 saved on the stack:
        */
       ldp x0, x1, [sp], #16
       msr elr_el1, x0
