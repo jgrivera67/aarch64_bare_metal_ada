@@ -10,7 +10,6 @@ ENTRY(reset_handler);
 
 BOOTLOADER_RAM_SIZE = 512K;
 BOOT_ADDRESS = 0x80000;
-STACK_RAM_SIZE = 8K;
 STACK_ALIGNMENT = 16;
 
 MEMORY
@@ -22,6 +21,7 @@ SECTIONS
 {
  .text :
   {
+    __global_text_region_start = .;
     *(.text.reset_handler)
     *(.text .text.*)
   } >RAM
@@ -42,18 +42,22 @@ SECTIONS
     PROVIDE_HIDDEN (__exidx_start = .);
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
     PROVIDE_HIDDEN (__exidx_end = .);
+    __global_text_region_end = .;
   } >RAM
 
   .rodata :
   {
+    __global_rodata_region_start = .;
     PROVIDE_HIDDEN (__rodata_start = .);
     *(.rodata .rodata.*)
     PROVIDE_HIDDEN (__rodata_end = .);
+    __global_rodata_region_end = .;
     PROVIDE( __data_load = . );
   } >RAM
 
   .data :  AT (__data_load)
   {
+    __global_data_region_start = .;
     PROVIDE( __data_start = . );
     *(.data .data.*)
     PROVIDE( __data_end = . );
@@ -65,13 +69,14 @@ SECTIONS
     *(.bss .bss.*)
     *(COMMON)
     PROVIDE( __bss_end = . );
+    __global_data_region_end = .;
   } >RAM
 
   .stack (NOLOAD)  :
   {
     . = ALIGN(STACK_ALIGNMENT);
-    _stack_start = .;
-    . += STACK_RAM_SIZE;
-    _stack_end = .;
+    __stacks_start = .;
+    *(.isr_stacks)
+    __stacks_end = .;
   } >RAM
 }

@@ -49,7 +49,6 @@ otg_mode=1
 dtoverlay=dwc2,dr_mode=host
 
 [all]
-# JGR
 enable_uart=1
 core_freq_min=500
 dtoverlay=disable-bt

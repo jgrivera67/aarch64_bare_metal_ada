@@ -49,8 +49,6 @@ otg_mode=1
 dtoverlay=dwc2,dr_mode=host
 
 [all]
-
-# JGR
 enable_uart=1
 dtparam=uart0=on
 uart_2ndstage=1

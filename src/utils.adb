@@ -81,11 +81,10 @@ package body Utils is
       end if;
 
       --
-      --  NOTE: This is a workaround for a compiler bug that generates
-      --  multi-byte loads at not properly-aligned addresses, when comparing
-      --  strings directly. This causes data abort exceptions, even with
-      --  alignment exceptions disabled, at least on the Raspberry PI's Aarch64
-      --  cores
+      --  NOTE: Comparing strings as arrays can cause data aborts, as the compiler
+      --  generates multi-byte load instructions, even when the strings are not properly
+      --  aligned. The data abort happens even with alignment check exceptions disabled
+      --  in the AArch64 core (at least on Raspberry PI).
       --
       if To_Integer (Str1'Address) mod Machine_Alignment = 0 and then
          To_Integer (Str2'Address) mod Machine_Alignment = 0
