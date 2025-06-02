@@ -1,0 +1,16 @@
+%YAML 1.1
+---
+define: &confver 1.0
+
+# Connection for Raspberry Pi 5
+connection: &con00
+  accepter: tcp,28880
+  connector: serialdev,/dev/tty.usbmodem12202,115200n81,local
+  #trace-both: '/var/log/trace-\p'
+
+# Connection for Raspberry Pi 4
+connection: &con01
+  accepter: tcp,28881
+  connector: serialdev,/dev/tty.usbserial-0001,115200n81,local
+  #trace-both: '/var/log/trace-\p'
+

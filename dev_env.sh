@@ -9,7 +9,9 @@ export GIT_EXTERNAL_DIFF=tkdiff
 
 alias v='gvim -U ide_env.vim'
 alias build_for_uart_boot='alr build -- -XUart_Boot=yes'
-alias run_ser2net='/opt/homebrew/sbin/ser2net -n -d -l -c /opt/homebrew/etc/ser2net/ser2net.yaml -P /tmp/ser2net.pid &'
+alias run_ser2net='/opt/homebrew/sbin/ser2net -n -d -l -c ./ser2net.yaml -P /tmp/ser2net.pid &'
+alias my_uart_rpi4='my_uart /dev/tty.usbserial-0001'
+alias my_uart_rpi5='my_uart /dev/tty.usbmodem112202'
 
 function gen_lst_arm64
 {
@@ -97,7 +99,7 @@ function my_uart {
 
 function my_gdb
 {
-    typeset tty_name
+    typeset remote_target
     typeset elf_file
 
     if [ $# != 2 ]; then
@@ -105,7 +107,7 @@ function my_gdb
             return 1
     fi
 
-    tty_name=$1
+    remote_target=$1
     elf_file=$2
 
     #
@@ -114,8 +116,8 @@ function my_gdb
     # --eval-command="set debug remote 1" \
     # --eval-command="set remotetimeout 10" \
     #
-    aarch64-elf-gdb -b 115200 \
-        --eval-command="target remote $tty_name" \
+    aarch64-elf-gdb \
+        --eval-command="target remote $remote_target" \
         --eval-command="set output-radix 16" \
         --eval-command="set print address on" \
         --eval-command="set print array on" \
@@ -126,4 +128,6 @@ function my_gdb
         $elf_file
 }
 
-. ~/my-projects/third-party/alire/scripts/alr-completion.bash
+if [ -f ~/my-projects/third-party/alire/scripts/alr-completion.bash ]; then
+    . ~/my-projects/third-party/alire/scripts/alr-completion.bash
+fi

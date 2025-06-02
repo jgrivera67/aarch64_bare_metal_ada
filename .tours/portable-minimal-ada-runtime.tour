@@ -1,0 +1,16 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "2: Portable Minimal Bare-metal Ada Runtime Library",
+  "steps": [
+    {
+      "file": "third_party/portable_minimal_ada_rts/portable_minimal_ada_rts.gpr",
+      "description": "Ada runtime library",
+      "line": 10
+    },
+    {
+      "file": "third_party/portable_minimal_ada_rts/portable_minimal_ada_rts.gpr",
+      "description": "Special compiler flags for compiling an Ada runtime",
+      "line": 24
+    }
+  ]
+}

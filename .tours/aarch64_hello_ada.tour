@@ -1,0 +1,16 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "3: aarch64_hello_ada",
+  "steps": [
+    {
+      "file": "sd_card_boot_memory_layout.ld",
+      "description": "Linker script to boot bare-metal program from SD card",
+      "line": 3
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Reset handler of a bare-metal program invoked from the Raspberry Pi OS bootloader:\n- Bare-metal boot sequence for Raspberry Pi 4:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/uml_diagrams/raspberrypi4_boot_sequence.svg)\n- Bare-metal boot sequence for Raspberry Pi 5:\n- ![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/uml_diagrams/raspberrypi5_boot_sequence.svg)",
+      "line": 12
+    }
+  ]
+}

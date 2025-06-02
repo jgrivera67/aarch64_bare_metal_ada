@@ -1,0 +1,31 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "1: build cross-toolchain",
+  "steps": [
+    {
+      "file": "third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh",
+      "description": "Download prerequisites",
+      "line": 77
+    },
+    {
+      "file": "third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh",
+      "description": "Build binutils",
+      "line": 85
+    },
+    {
+      "file": "third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh",
+      "description": "Build gcc for C only",
+      "line": 111
+    },
+    {
+      "file": "third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh",
+      "description": "Build gcc for C, C++ and Ada",
+      "line": 135
+    },
+    {
+      "file": "third_party/build_aarch64_elf_gnat_toolchain_on_macos.sh",
+      "description": "Build gdb",
+      "line": 163
+    }
+  ]
+}
