@@ -12,7 +12,7 @@ if [ $2 = "uart-boot" ]; then
     UART_BOOT="yes"
     echo "*** Building embedded app uart_boot_loader_server ..."
     cd $PROJECT_DIR/embedded_apps/uart_boot_loader_server
-    alr clean
+    alr clean -- -XBoard=$BOARD -XUart_Boot=no
     alr build -- -XBoard=$BOARD -XUart_Boot=no
     status=$?
     ls -l  bin/*
@@ -52,7 +52,7 @@ for app in aarch64_hello_ada \
            aarch64_multicore_interrupts; do
    echo "*** Building $app ..."
    cd $PROJECT_DIR/embedded_apps/$app
-   alr clean
+   alr clean -- -XBoard=$BOARD -XUart_Boot=$UART_BOOT
    alr build -- -XBoard=$BOARD -XUart_Boot=$UART_BOOT
    status=$?
    ls -l  bin/*

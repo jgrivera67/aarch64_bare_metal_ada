@@ -103,7 +103,7 @@ function my_gdb
     typeset elf_file
 
     if [ $# != 2 ]; then
-            echo "Usage: $FUNCNAME <tty name> <elf file>"
+            echo "Usage: $FUNCNAME <remote target> <elf file>"
             return 1
     fi
 
@@ -126,6 +126,30 @@ function my_gdb
         --eval-command="set history save on" \
         --eval-command="set pagination off" \
         $elf_file
+}
+
+function my_gdb_rpi4 {
+   typeset elf_file
+
+   if [ $# != 1 ]; then
+      echo "Usage: $FUNCNAME <elf file>"
+      return 1
+   fi
+
+   elf_file=$1
+   my_gdb localhost:28881 $elf_file
+}
+
+function my_gdb_rpi5 {
+   typeset elf_file
+
+   if [ $# != 1 ]; then
+      echo "Usage: $FUNCNAME <elf file>"
+      return 1
+   fi
+
+   elf_file=$1
+   my_gdb localhost:28880 $elf_file
 }
 
 if [ -f ~/my-projects/third-party/alire/scripts/alr-completion.bash ]; then
