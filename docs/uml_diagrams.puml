@@ -38,12 +38,12 @@ note right
   - To verify that saving/restoring CPU registers
     works, needed for interrupt handling.
 end note
+:Writing your own self-hosted mini GDB server in Ada;
+note right
+  To be able to get stack traces and read memory
+  when the bare-metal program crashes.
+end note
 fork
-   :Writing your own self-hosted mini GDB server in Ada;
-   note right
-   To be able to get stack traces and read memory
-   when the bare-metal program crashes.
-   end note
    :AArch64 bare-metal memory protection using the ARMv8-A MMU;
    note right
    - To catch invalid memory accesses
@@ -120,4 +120,48 @@ activate "ROM"
       deactivate "bl31 image (ATF) on SD card"
    deactivate "SPI EEPROM"
 deactivate "ROM"
+@enduml
+
+@startuml entering-gdbserver-on-prefetch-abort
+title Entering Self-hosted GDB server on Prefetch Abort
+actor "prefetch abort exception"
+"prefetch abort exception" -> "interrupt_handling_asm.S" : same_el_with_sp_el0_synchronous_exception_handler
+activate "interrupt_handling_asm.S"
+   "interrupt_handling_asm.S" ->  "interrupt_handling_asm.S" : INTERRUPT_HANDLER_PROLOG
+   activate "interrupt_handling_asm.S"
+   deactivate "interrupt_handling_asm.S"
+   "interrupt_handling_asm.S" ->  "CPU.Interrupt_Handling" : Ada_Handle_EL1_Synchronous_Exception
+   activate "CPU.Interrupt_Handling"
+      "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : error_exception_handler()
+      activate "CPU.Interrupt_Handling"
+      deactivate "CPU.Interrupt_Handling"
+      "arch-support.c" ->  "gdbserver.c" : run_gdb_server()
+      activate "gdbserver.c"
+      deactivate "gdbserver.c"
+    deactivate "arch-support.c"
+  deactivate "arch-support.c"
+deactivate "arch-support-asm.S"
+@enduml
+
+@startuml entering-gdbserver-on-data-abort
+
+title Entering Self-hosted GDB server on Data Abort
+
+actor "data abort exception"
+"data abort exception" -> "arch-support-asm.S" : data_abort_handler()
+activate "arch-support-asm.S"
+  "arch-support-asm.S" ->  "arch-support.c" : c_data_abort_handler()
+  activate "arch-support.c"
+    "arch-support.c" ->  "arch-support.c" : error_exception_handler()
+    activate "arch-support.c"
+      "arch-support.c" ->  "gdbserver.c" : run_gdb_server()
+      note right
+        called via g_fault_exception_callback_p()
+        function pointer
+      end note
+      activate "gdbserver.c"
+      deactivate "gdbserver.c"
+    deactivate "arch-support.c"
+  deactivate "arch-support.c"
+deactivate "arch-support-asm.S"
 @enduml

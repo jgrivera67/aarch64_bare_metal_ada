@@ -27,14 +27,12 @@ package body Gdb_Server is
       Cpu_Id : constant CPU.Valid_Cpu_Core_Id_Type := CPU.Multicore.Get_Cpu_Id;
       Gdb_Server_Obj : Gdb_Server_Type renames Gdb_Server_Objects (Cpu_Id);
       Data_Last_Index : Valid_Gdb_Packet_Data_Index_Type;
+      Old_Console_Logging_Level : constant Runtime_Log_Level_Type := Get_Console_Logging_Level;
    begin
       --  Block access to the UART console from other CPUs while the GDB server is running:
       Utils.Lock_Console (Print_Cpu => False);
 
-      if Gdb_Server_Obj.Gdb_Attached then
-         --  Tell the GDB client that the target is halted at a debug exception:
-         Send_Gdb_Stop_Reply_Packet (Gdb_Server_Obj);
-      else
+      if not Gdb_Server_Obj.Gdb_Attached then
          Log_Info_Msg_Begin ("Entering self-hosted debugger on ");
          Log_Info_Msg_Part (Debug_Event'Image);
          Log_Info_Msg_Part (" at PC ");
@@ -50,6 +48,12 @@ package body Gdb_Server is
       Gdb_Server_Obj.Resume_Target := False;
       Gdb_Server_Obj.Gdb_Server_Aborted := False;
       Gdb_Server_Obj.Running := True;
+      Set_Console_Logging_Level (Mute);
+
+      if Gdb_Server_Obj.Gdb_Attached then
+         --  Tell the GDB client that the target is halted at a debug exception:
+         Send_Gdb_Stop_Reply_Packet (Gdb_Server_Obj);
+      end if;
 
       loop
          Receive_Gdb_Packet (Gdb_Server_Obj);
@@ -62,6 +66,7 @@ package body Gdb_Server is
       end loop;
 
       Gdb_Server_Obj.Running := False;
+      Set_Console_Logging_Level (Old_Console_Logging_Level);
       if not Gdb_Server_Obj.Gdb_Attached or else Gdb_Server_Obj.Gdb_Server_Aborted then
          CPU.Self_Hosted_Debug.Disable_Self_Hosted_Debugging;
          Log_Info_Msg_Begin ("Exiting self-hosted debugger at PC ");
@@ -506,7 +511,7 @@ package body Gdb_Server is
       if not Valid_Readable_Data_Address (Base_Source_Address) and then
          not Valid_Code_Address (Base_Source_Address)
       then
-         Log_Error_Msg ("packet 'm' invalid base address: ");
+         Log_Error_Msg_Begin ("packet 'm' invalid base address: ");
          Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Base_Source_Address));
          Log_Error_Msg_End;
          Send_Gdb_Empty_Packet (Gdb_Server_Obj);
@@ -530,7 +535,7 @@ package body Gdb_Server is
          if not Valid_Readable_Data_Address (Last_Source_Address) and then
             not Valid_Code_Address (Last_Source_Address)
          then
-            Log_Error_Msg ("packet 'm' invalid size: ");
+            Log_Error_Msg_Begin ("packet 'm' invalid size: ");
             Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Num_Source_Bytes));
             Log_Error_Msg_End;
             Send_Gdb_Empty_Packet (Gdb_Server_Obj);
@@ -600,7 +605,7 @@ package body Gdb_Server is
       end if;
 
       if not Valid_Writable_Data_Address (Base_Target_Address) then
-         Log_Error_Msg ("packet 'M' invalid base address: ");
+         Log_Error_Msg_Begin ("packet 'M' invalid base address: ");
          Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Base_Target_Address));
          Log_Error_Msg_End;
          Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)
@@ -627,7 +632,7 @@ package body Gdb_Server is
             Base_Target_Address + Num_Target_Bytes - 1;
       begin
          if not Valid_Writable_Data_Address (Last_Target_Address) then
-            Log_Error_Msg ("packet 'M' invalid size: ");
+            Log_Error_Msg_Begin ("packet 'M' invalid size: ");
             Log_Error_Value_Hexadecimal (Interfaces.Unsigned_64 (Num_Target_Bytes));
             Log_Error_Msg_End;
             Send_Gdb_Error_Packet (Gdb_Server_Obj, "E16"); --  errno 22 (EINVAL)

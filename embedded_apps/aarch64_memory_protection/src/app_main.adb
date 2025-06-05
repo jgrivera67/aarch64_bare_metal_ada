@@ -38,6 +38,7 @@ procedure App_Main is
 begin
    Gdb_Server.Debug_On := True;
    CPU.Memory_Protection.Debug_On := True;
+   --  Utils.Debug_On := True;
    Set_Console_Logging_Level (DEBUG);
 
    Utils.Print_String (

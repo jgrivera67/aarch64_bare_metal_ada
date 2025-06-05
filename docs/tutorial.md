@@ -7,7 +7,7 @@ This tutorial teaches how to develop 64-bit bare-metal embedded software for the
 The tutorial develops from scratch a collection of bare-metal SPARK Ada software
 components that can be used as an infrastructure to develop multicore system-level
 software in Ada, for AArch64-based embedded platforms.
-They can be used as a foundation to develop boot ROMs, boot loaders, multicore RTOS
+They can be used as a foundation to develop boot ROMs, bootloaders, multicore RTOS
 kernels, separation kernels and hypervisors in Ada, for AArch64-based platforms.
 The Raspberry Pi 4 and Raspberry Pi 5 boards are used as the target platforms.
 
@@ -31,7 +31,7 @@ kernel or hypervisor for AArch64 platforms.
   - Raspberry Pi boot sequence
   - AArch64 startup code
   - Minimal UART driver
-- [Writing your own UART boot loader for Raspberry Pi bare-metal programs](#section_6)
+- [Writing your own UART bootloader for Raspberry Pi bare-metal programs](#section_6)
 - [Writing your own bare-metal debug message logger in Ada](#section_7)
 - [AArch64 bare-metal exception handling in Ada](#section_8)
 - [Writing your own self-hosted mini GDB server in Ada](#section_9)
@@ -220,7 +220,7 @@ cp $bin_file /Volumes/bootfs
 sync
 ```
 <a id="section_6"></a>
-## Writing your own UART boot loader for Raspberry Pi bare-metal programs
+## Writing your own UART bootloader for Raspberry Pi bare-metal programs
 
 <a id="section_7"></a>
 ## Writing your own bare-metal debug message logger in Ada

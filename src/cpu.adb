@@ -147,4 +147,13 @@ package body CPU is
       return DAIF_Value.F = Interrupt_Disabled and then DAIF_Value.I = Interrupt_Disabled;
    end Cpu_Interrupting_Disabled;
 
+   function Saved_Cpu_Interrupting_Is_Disabled (Saved_Cpu_Interrupting : Cpu_Register_Type)
+      return Boolean
+   is
+      PSTATE_Value : constant PSTATE_Type := (As_Value => True, Value => Saved_Cpu_Interrupting);
+      DAIF_Value : constant DAIF_Type := PSTATE_Value.DAIF;
+   begin
+      return DAIF_Value.F = Interrupt_Disabled and then DAIF_Value.I = Interrupt_Disabled;
+   end Saved_Cpu_Interrupting_Is_Disabled;
+
 end CPU;

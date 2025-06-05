@@ -195,7 +195,7 @@ package body Utils.Runtime_Log is
    end Dump_Runtime_Log;
 
    procedure Log_Write_Msg (Runtime_Log : in out Runtime_Log_Type;
-                            Log_Level : Runtime_Log_Level_Type;
+                            Log_Level : Unmuted_Runtime_Log_Level_Type;
                             Msg : String;
                             Originator_Address : System.Address;
                             Begin_Msg : Boolean := True;
@@ -208,7 +208,6 @@ package body Utils.Runtime_Log is
       end if;
 
       declare
-         use type CPU.Cpu_Core_Id_Type;
          Old_Cpu_Interrupting_State : constant CPU.Cpu_Register_Type :=
             CPU.Interrupt_Handling.Disable_Cpu_Interrupting;
          Timestamp_Us : constant Timestamp_Us_Type := Get_Timestamp_Us;
@@ -222,9 +221,9 @@ package body Utils.Runtime_Log is
                Short_Timestamp : constant Unsigned_32 :=
                   Unsigned_32 (Timestamp_Us and Timestamp_Us_Type (Unsigned_32'Last));
             begin
-               if Log_Level >= Runtime_Log.Console_Logging_Level and then
-                  not Gdb_Server.Gdb_Server_Is_Running
-               then
+               pragma Assert (Runtime_Log.Unpaired_Msg_Begin_Originator = System.Null_Address);
+               Runtime_Log.Unpaired_Msg_Begin_Originator := Originator_Address;
+               if Log_Level >= Runtime_Log.Console_Logging_Level then
                   Utils.Lock_Console (Print_Cpu => False);
                end if;
 
@@ -250,9 +249,11 @@ package body Utils.Runtime_Log is
          Log_Write_String (Runtime_Log, Log_Level, Msg);
 
          if End_Msg then
+            pragma Assert (Runtime_Log.Unpaired_Msg_Begin_Originator /= System.Null_Address);
+            Runtime_Log.Unpaired_Msg_Begin_Originator := System.Null_Address;
             Log_Write_Char (Runtime_Log, Log_Level, ASCII.LF);
             Runtime_Log.Seq_Num := Runtime_Log.Seq_Num + 1;
-            if Utils.Console_Lock_Owner = Cpu_Id then
+            if Log_Level >= Runtime_Log.Console_Logging_Level then
                Utils.Unlock_Console;
             end if;
          end if;
@@ -262,7 +263,7 @@ package body Utils.Runtime_Log is
    end Log_Write_Msg;
 
    procedure Log_Write_Msg_Value_In_Decimal (Runtime_Log : in out Runtime_Log_Type;
-                                             Log_Level : Runtime_Log_Level_Type;
+                                             Log_Level : Unmuted_Runtime_Log_Level_Type;
                                              Value : Unsigned_32)
    is
       Buffer : Utils.Number_Conversion.Unsigned_32_Decimal_String_Type;
@@ -278,7 +279,7 @@ package body Utils.Runtime_Log is
    end Log_Write_Msg_Value_In_Decimal;
 
    procedure Log_Write_Msg_Value_In_Hexadecimal (Runtime_Log : in out Runtime_Log_Type;
-                                                 Log_Level : Runtime_Log_Level_Type;
+                                                 Log_Level : Unmuted_Runtime_Log_Level_Type;
                                                  Value : Unsigned_64)
    is
       Buffer : Utils.Number_Conversion.Unsigned_64_Hexadecimal_String_Type;
@@ -293,7 +294,7 @@ package body Utils.Runtime_Log is
    end Log_Write_Msg_Value_In_Hexadecimal;
 
    procedure Log_Write_String (Runtime_Log : in out Runtime_Log_Type;
-                               Log_Level : Runtime_Log_Level_Type;
+                               Log_Level : Unmuted_Runtime_Log_Level_Type;
                                Str : String) is
    begin
       for C of Str loop
@@ -302,7 +303,7 @@ package body Utils.Runtime_Log is
    end Log_Write_String;
 
    procedure Log_Write_Char (Runtime_Log : in out Runtime_Log_Type;
-                             Log_Level : Runtime_Log_Level_Type;
+                             Log_Level : Unmuted_Runtime_Log_Level_Type;
                              C : Character) is
       use type CPU.Valid_Cpu_Core_Id_Type;
       Cursor : Runtime_Log_Buffer_Index_Type;

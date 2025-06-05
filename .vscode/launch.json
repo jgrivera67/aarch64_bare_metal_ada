@@ -1,0 +1,46 @@
+{
+    "configurations": [
+        {
+            "name": "Attach to RPI4 gdbserver - aarch64_memory_protection",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "embedded_apps/aarch64_memory_protection/bin/aarch64_memory_protection.elf",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerServerAddress": "localhost:28881",
+            "miDebuggerPath": "${env:HOME}/opt/cross/aarch64-elf/bin/aarch64-elf-gdb"
+        },
+        {
+            "name": "Attach to RPI5 gdbserver - aarch64_memory_protection",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "embedded_apps/aarch64_memory_protection/bin/aarch64_memory_protection.elf",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerServerAddress": "localhost:28880",
+            "miDebuggerPath": "${env:HOME}/opt/cross/aarch64-elf/bin/aarch64-elf-gdb"
+        }
+    ]
+}

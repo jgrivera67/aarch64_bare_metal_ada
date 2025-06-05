@@ -12,6 +12,8 @@
 package CPU.Multicore
    with SPARK_Mode => On
 is
+   Debug_On : Boolean := False;
+
    function Get_Cpu_Id return Valid_Cpu_Core_Id_Type
       with Inline_Always,
            Suppress => All_Checks;

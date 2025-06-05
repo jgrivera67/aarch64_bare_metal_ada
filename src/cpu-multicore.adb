@@ -16,6 +16,7 @@ with System.Machine_Code;
 with Interfaces;
 
 package body CPU.Multicore is
+   use Utils.Runtime_Log;
 
    function Get_Cpu_Id return Valid_Cpu_Core_Id_Type is
       MPIDR_EL1_Value : MPIDR_EL1_Type;
@@ -41,7 +42,6 @@ package body CPU.Multicore is
    end Send_Multicore_Event;
 
    procedure Start_Secondary_Cpus is
-      use Utils.Runtime_Log;
       Reset_Handler_Address : constant System.Address := Get_Reset_Handler_Address;
    begin
       for Cpu_Id in Secondary_Cpu_Core_Id_Type loop
@@ -156,11 +156,37 @@ package body CPU.Multicore is
       Cpu_Id : constant Valid_Cpu_Core_Id_Type := Get_Cpu_Id;
       Old_Cpu_Interrupting : constant Cpu_Register_Type :=
          CPU.Interrupt_Handling.Disable_Cpu_Interrupting;
+      Old_Console_Logging_Level :  constant Runtime_Log_Level_Type := Get_Console_Logging_Level;
+      Caller : constant System.Address := CPU.Get_Call_Address;
    begin
+      Set_Console_Logging_Level (Mute);
       if Spinlock_Owner (Spinlock) = Cpu_Id then
+         pragma Assert (CPU.Saved_Cpu_Interrupting_Is_Disabled (Old_Cpu_Interrupting));
          Spinlock.Recursive_Acquire_Count := @ + 1;
-         CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Old_Cpu_Interrupting);
-         return;
+         if Debug_On then
+            Log_Debug_Msg_Begin ("Recursively acquired lock ");
+            Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Spinlock'Address)));
+            Log_Debug_Msg_Part (", count ");
+            Log_Debug_Value_Decimal (Interfaces.Unsigned_32 (Spinlock.Recursive_Acquire_Count));
+            Log_Debug_Msg_Part (", from ");
+            Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Caller)));
+            Log_Debug_Msg_End;
+         end if;
+
+         --
+         --  NOTE: We don't need to restore the CPU interrupting state, as
+         --  the saved CPU interrupting state also has interrupts disabled,
+         --  when recursively acquiring a spinlock.
+         --
+         goto Common_Exit;
+      end if;
+
+      if Debug_On then
+         Log_Debug_Msg_Begin ("Acquiring lock ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Spinlock'Address)));
+         Log_Debug_Msg_Part (", from ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Caller)));
+         Log_Debug_Msg_End;
       end if;
 
       declare
@@ -175,20 +201,57 @@ package body CPU.Multicore is
          Spinlock.Old_Cpu_Interrupting := Old_Cpu_Interrupting;
          Memory_Barrier;
       end;
+
+      if Debug_On then
+         Log_Debug_Msg_Begin ("Acquired lock ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Spinlock'Address)));
+         Log_Debug_Msg_Part (", from ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Caller)));
+         Log_Debug_Msg_End;
+      end if;
+
+   --  TODO: Change this to use Finalize aspecta for Old_Console_Logging_Level
+   <<Common_Exit>>
+      Set_Console_Logging_Level (Old_Console_Logging_Level);
    end Spinlock_Acquire;
 
    procedure Spinlock_Release (Spinlock : in out Spinlock_Type) is
+      Old_Console_Logging_Level :  constant Runtime_Log_Level_Type := Get_Console_Logging_Level;
+      Caller : constant System.Address := CPU.Get_Call_Address;
    begin
+      Set_Console_Logging_Level (Mute);
       if Spinlock.Recursive_Acquire_Count > 0 then
          Spinlock.Recursive_Acquire_Count := @ - 1;
-         return;
+         if Debug_On then
+            Log_Debug_Msg_Begin ("Recursively released lock ");
+            Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Spinlock'Address)));
+            Log_Debug_Msg_Part (", count ");
+            Log_Debug_Value_Decimal (Interfaces.Unsigned_32 (Spinlock.Recursive_Acquire_Count));
+            Log_Debug_Msg_Part (", from ");
+            Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Caller)));
+            Log_Debug_Msg_End;
+         end if;
+
+         goto Common_Exit;
       end if;
 
       Memory_Barrier;
       Spinlock.Owner := Invalid_Cpu_Core_Id;
       Spinlock.Now_Serving := @ + 1;
       Send_Multicore_Event;
+      if Debug_On then
+         Log_Debug_Msg_Begin ("Released lock ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Spinlock'Address)));
+         Log_Debug_Msg_Part (", from ");
+         Log_Debug_Value_Hexadecimal (Interfaces.Unsigned_64 (To_Integer (Caller)));
+         Log_Debug_Msg_End;
+      end if;
+
       CPU.Interrupt_Handling.Restore_Cpu_Interrupting (Spinlock.Old_Cpu_Interrupting);
+
+   --  TODO: Change this to use Finalize aspecta for Old_Console_Logging_Level
+   <<Common_Exit>>
+      Set_Console_Logging_Level (Old_Console_Logging_Level);
    end Spinlock_Release;
 
 end CPU.Multicore;

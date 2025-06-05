@@ -8,6 +8,10 @@
       "line": 10
     },
     {
+      "directory": "third_party/portable_minimal_ada_rts/src",
+      "description": "source files copied from an existing Ada runtime library. You can copy the files from a native gnat compiler downloaded with `alire toolchain --select`:\n```\n~/.local/share/alire/toolchains/gnat_native_14.2.1_cc5517d6/lib/gcc/aarch64-apple-darwin23.6.0/14.2.0/\nadainclude/\n```\n\nOr from a gnat cross-compiler downloaded with `alire toolchain --select`, for example:\n```\n~/.local/share/alire/toolchains/gnat_arm_elf_14.2.1_9efaf827/arm-eabi/lib/gnat/light-cortex-m33f/gnat \n```"
+    },
+    {
       "file": "third_party/portable_minimal_ada_rts/portable_minimal_ada_rts.gpr",
       "description": "Special compiler flags for compiling an Ada runtime",
       "line": 24

@@ -87,6 +87,9 @@ package CPU is
 
    function Convert_To_Big_Endian (Value : Cpu_Register_Type) return Cpu_Register_Type;
 
+   function Saved_Cpu_Interrupting_Is_Disabled (Saved_Cpu_Interrupting : Cpu_Register_Type)
+      return Boolean;
+
    -----------------------------------------------------------------------------
    --  Execution stack type declarations
    -----------------------------------------------------------------------------
