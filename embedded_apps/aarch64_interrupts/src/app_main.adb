@@ -35,6 +35,7 @@ begin
    Timer_Driver.Initialize;
    CPU.Interrupt_Handling.Initialize;
 
+   Uart_Driver.Flush_Output;
    Uart_Driver.Initialize_Uart (Interrupt_Callbacks.Uart_Rx_Interrupt_Callback'Access,
                                 Rx_Interrupt_Callback_Arg => Uart_Interrupts_Counter'Address);
 

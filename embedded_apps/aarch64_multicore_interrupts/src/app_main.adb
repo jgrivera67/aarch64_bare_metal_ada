@@ -24,16 +24,25 @@ procedure App_Main is
    Timer_Interrupts_Counter : Interfaces.Unsigned_32 := 0;
    Uart_Interrupts_Counter : Interfaces.Unsigned_32 := 0;
 begin
-   --
-   --  NOTE: For Raspberry PI 4, we need ot start secondary cores before calling
-   --  `CPU.Memory_Protection.Initialize`, as the spin tables are in page 0, which
-   --  cannot be written after enabling the MMU.
-   --
-   --  For CPU 0, App_Main is invoked from the the GNAT-generated main
-   --  after doing Ada package elaboration. So, at this point, we can
-   --  release secondary cores.
-   --
    if Cpu_Id = CPU.Valid_Cpu_Core_Id_Type'First then
+      Utils.Print_String (
+         Board.Board_Name & " AArch64 Multicore Interrupts - built on " &
+         GNAT.Source_Info.Compilation_Date &
+         " at " & GNAT.Source_Info.Compilation_Time &
+         ", boot address ");
+      Utils.Print_Number_Hexadecimal (
+         Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
+         End_Line => True);
+
+      --
+      --  NOTE: For Raspberry PI 4, we need to start secondary cores before calling
+      --  `CPU.Memory_Protection.Initialize`, as the spin tables are in page 0, which
+      --  cannot be written after enabling the MMU.
+      --
+      --  For CPU 0, App_Main is invoked from the the GNAT-generated main
+      --  after doing Ada package elaboration. So, at this point, we can
+      --  release secondary cores.
+      --
       CPU.Multicore.Start_Secondary_Cpus;
    end if;
 
@@ -43,21 +52,11 @@ begin
 
    if Cpu_Id = CPU.Valid_Cpu_Core_Id_Type'First then
       Utils.Lock_Console (Print_Cpu => False);
+      Uart_Driver.Flush_Output;
       Uart_Driver.Initialize_Uart (Interrupt_Callbacks.Uart_Rx_Interrupt_Callback'Access,
-                                 Rx_Interrupt_Callback_Arg => Uart_Interrupts_Counter'Address);
+                                   Rx_Interrupt_Callback_Arg => Uart_Interrupts_Counter'Address);
       Utils.Unlock_Console;
    end if;
-
-   Utils.Lock_Console;
-   Utils.Print_String (
-      Board.Board_Name & " AArch64 Multicore Interrupts - built on " &
-      GNAT.Source_Info.Compilation_Date &
-      " at " & GNAT.Source_Info.Compilation_Time &
-      ", boot address ");
-   Utils.Print_Number_Hexadecimal (
-      Interfaces.Unsigned_64 (System.Storage_Elements.To_Integer (Code_Address)),
-      End_Line => True);
-   Utils.Unlock_Console;
 
    Timer_Driver.Start_Timer (Interrupt_Callbacks.Timer_Interrupt_Callback'Access,
                              Timer_Interrupt_Callback_Arg => Timer_Interrupts_Counter'Address,

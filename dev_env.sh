@@ -132,6 +132,7 @@ function my_gdb
         --eval-command="set print union on" \
         --eval-command="set history save on" \
         --eval-command="set pagination off" \
+        --eval-command="set max-value-size unlimited" \
         $elf_file
 }
 

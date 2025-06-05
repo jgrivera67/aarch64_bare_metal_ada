@@ -64,7 +64,7 @@ package body Uart_Driver is
 
       use CPU.Interrupt_Handling;
 
-   begin
+   begin --  Initialize_Uart
       Uart_Device.Rx_Interrupt_Callback_Pointer := Rx_Interrupt_Callback_Pointer;
       Uart_Device.Rx_Interrupt_Callback_Arg := Rx_Interrupt_Callback_Arg;
       Disable_Uart;
@@ -148,7 +148,8 @@ package body Uart_Driver is
    begin
       loop
          UARTFR_Value := UART0_Periph.UARTFR;
-         exit when UARTFR_Value.TXFE = 1;
+         exit when UARTFR_Value.TXFE = 1 and then
+                   UARTFR_Value.BUSY = 0;
       end loop;
    end Flush_Output;
 
