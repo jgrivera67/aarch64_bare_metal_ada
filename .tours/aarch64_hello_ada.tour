@@ -4,13 +4,38 @@
   "steps": [
     {
       "file": "sd_card_boot_memory_layout.ld",
-      "description": "Linker script to boot bare-metal program from SD card",
+      "description": "Linker script to boot bare-metal program from SD card\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/baremetal_memory_map1.svg)",
       "line": 3
     },
     {
       "file": "src/reset_handler.S",
-      "description": "Reset handler of a bare-metal program invoked from the Raspberry Pi OS bootloader:\n- Bare-metal boot sequence for Raspberry Pi 4:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/uml_diagrams/raspberrypi4_boot_sequence.svg)\n- Bare-metal boot sequence for Raspberry Pi 5:\n- ![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/uml_diagrams/raspberrypi5_boot_sequence.svg)",
+      "description": "Reset handler of a bare-metal program invoked from the Raspberry Pi OS bootloader:\n- Bare-metal boot sequence for Raspberry Pi 4:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/raspberrypi4_boot_sequence.svg)\n- Bare-metal boot sequence for Raspberry Pi 5:\n- ![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/raspberrypi5_boot_sequence.svg)",
       "line": 12
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Transition to EL1",
+      "line": 42
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Start executing at EL1 exception level (supervisor mode)",
+      "line": 48
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Initialize stack pointer before jumping to Ada code",
+      "line": 56
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Call gnatbind-generated main",
+      "line": 73
+    },
+    {
+      "file": "src/reset_handler.S",
+      "description": "Pqrk the CPU if we return here",
+      "line": 80
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "4: uart_bootloader_server",
+  "steps": [
+    {
+      "title": "Introduction",
+      "description": ""
+    }
+  ]
+}

@@ -6,6 +6,7 @@
 	],
 	"settings": {
 		"sarif-viewer.connectToGithubCodeScanning": "off",
-		"ada.projectFile": "aarch64_baremetal_ada.gpr"
+		"ada.projectFile": "aarch64_baremetal_ada.gpr",
+		"plantuml.exportOutDir": "docs/diagram_images"
 	}
 }

@@ -21,7 +21,7 @@ Below is the road map of this tutorial. The end goal is to teach everything
 necessary to enable you to develop your own RTOS kernel or your own separation
 kernel or hypervisor for AArch64 platforms.
 
-![](uml_diagrams/arch64_bare_metal_tutorial_road_map.svg)
+![](diagram_images/arch64_bare_metal_tutorial_road_map.svg)
 
 - [Setting up the development host environment](#section_1)
 - [Setting up Raspberry Pi board for bare-metal development](#section_2)
@@ -62,7 +62,7 @@ kernel or hypervisor for AArch64 platforms.
 
 - For Raspberry Pi 4, use a USB to TTL serial cable such as [this one](https://www.adafruit.com/product/954)
   - Connect the cable to the Raspberry PI board shown below (the red wire is not necessary):
-    ![](Raspberry-Pi-4-uart-connection.png)
+    ![](picture_images/Raspberry-Pi-4-uart-connection.png)
 
   - Install the corresponding device driver for the serial to USB cable, for
     your development host. For example, for
@@ -71,7 +71,7 @@ kernel or hypervisor for AArch64 platforms.
 
 - For Raspberry Pi 5, use the Raspberry Pi [Debug Probe](https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html) like [this one](https://www.adafruit.com/product/5699)
   - Connect the cable to the Raspberry PI board shown below (the red wire is not necessary):
-    ![](Raspberry-Pi-5-uart-connection.jpg)
+    ![](picture_images/Raspberry-Pi-5-uart-connection.jpg)
 
 ### How to run picocom to access Raspberry Pi debug UART
 ```
@@ -199,10 +199,10 @@ by running the `build_all.sh` script.
 ### Booting a 64-bit bare-metal program on the Raspberry Pi
 
 The boot sequence for the Raspberry Pi 4 is shown below:
-![](uml_diagrams/raspberrypi4_boot_sequence.svg)
+![](diagram_images/raspberrypi4_boot_sequence.svg)
 
 The boot sequence for the Raspberry Pi 5 is shown below:
-![](uml_diagrams/raspberrypi5_boot_sequence.svg)
+![](diagram_images/raspberrypi5_boot_sequence.svg)
 
 The last boot stage typically boots a Linux kernel binary image from the SD card,
 but it can also boot a bare-metal program binary image (`.bin` file) instead. We
