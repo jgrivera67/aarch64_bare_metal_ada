@@ -35,6 +35,23 @@ procedure App_Main is
       X := 1;
    end Cause_Data_Abort_Null_Pointer_Write;
 
+   procedure Cause_Prefetch_Abort_Executing_From_Stack is
+      X : Interfaces.Unsigned_32;
+      procedure Bad_Boy
+         with Import, Address => X'Address;
+   begin
+      Utils.Print_String (LF & "Causing prefetch abort executing from the stack ..." & LF);
+      Bad_Boy;
+   end Cause_Prefetch_Abort_Executing_From_Stack;
+
+   procedure Cause_Prefetch_Abort_Executing_From_Null_Address is
+      procedure Bad_Boy
+         with Import, Address => System.Null_Address;
+   begin
+      Utils.Print_String (LF & "Causing prefetch abort executing from null address ..." & LF);
+      Bad_Boy;
+   end Cause_Prefetch_Abort_Executing_From_Null_Address;
+
 begin
    Gdb_Server.Debug_On := True;
    CPU.Memory_Protection.Debug_On := True;
@@ -56,6 +73,8 @@ begin
       Utils.Print_String (LF & "1. Data abort for unmapped address write" & LF);
       Utils.Print_String ("2. Data abort for null pointer write" & LF);
       Utils.Print_String ("3. Breakpoint" & LF);
+      Utils.Print_String ("4. Prefetch abort executing from the stack" & LF);
+      Utils.Print_String ("5. Prefetch abort executing from null address" & LF);
       C := Utils.Get_Char;
       case C is
          when '1' =>
@@ -64,6 +83,10 @@ begin
             Cause_Data_Abort_Null_Pointer_Write;
          when '3' =>
             CPU.Break_Point;
+         when '4' =>
+            Cause_Prefetch_Abort_Executing_From_Stack;
+         when '5' =>
+            Cause_Prefetch_Abort_Executing_From_Null_Address;
          when others =>
             Utils.Print_String (LF & "Invalid option: '");
             Utils.Put_Char (C);
