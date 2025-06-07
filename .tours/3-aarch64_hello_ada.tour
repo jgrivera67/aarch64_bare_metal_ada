@@ -34,7 +34,7 @@
     },
     {
       "file": "src/reset_handler.S",
-      "description": "Pqrk the CPU if we return here",
+      "description": "Park the CPU if we return here",
       "line": 80
     }
   ]

@@ -219,8 +219,13 @@ we can copy our binary to the SD card as follows:
 cp $bin_file /Volumes/bootfs
 sync
 ```
+
+[Vscode code tour 3: aarch64_ello_ada](../.tours/3-aarch64_hello_ada.tour)
+
 <a id="section_6"></a>
 ## Writing your own UART bootloader for Raspberry Pi bare-metal programs
+
+[Vscode code tour 4: uart_boot_loader_server](../.tours/4-uart_bootloader_server.tour)
 
 <a id="section_7"></a>
 ## Writing your own bare-metal debug message logger in Ada
@@ -230,6 +235,14 @@ sync
 
 <a id="section_9"></a>
 ## Writing your own self-hosted mini GDB server in Ada
+
+The GDB remote serial protcol (RSP) is a simple ASCII-based request/response protocol:
+
+![](diagram_images/remote_gdb.svg)
+
+NOTE: For GDB remote protocol packet formats see
+  https://sourceware.org/gdb/onlinedocs/gdb/Packets.html
+
 
 <a id="section_10"></a>
 ## AArch64 bare-metal memory protection using the ARMv8-A MMU

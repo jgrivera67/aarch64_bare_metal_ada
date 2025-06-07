@@ -4,7 +4,27 @@
   "steps": [
     {
       "title": "Introduction",
-      "description": ""
+      "description": "![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/raspberrypi_uart_boot_sequence.svg)\n\nMemory map when booting from UART:\n\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/baremetal_memory_map2.svg)"
+    },
+    {
+      "file": "embedded_apps/uart_boot_loader_server/memory_layout.ld",
+      "description": "The UART bootloader server is a bare-metal AArch64 program loaded from the SD card at address 0x8_0000\nand that reserves 512K of DRAM for itself. It loads the target bare-metal program image at address 0x10_0000,\nas shown below:\n\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/baremetal_memory_map2.svg)",
+      "line": 10
+    },
+    {
+      "file": "embedded_apps/uart_boot_loader_server/src/app_main.adb",
+      "description": "`Load_Image_Over_Uart` runs the receiver side of the a modified Xmodem fiel transfer protocol over UART.",
+      "line": 27
+    },
+    {
+      "file": "embedded_apps/uart_boot_loader_server/src/uart_boot_loader_server.adb",
+      "description": "Receive file from the host and store it at the load address",
+      "line": 17
+    },
+    {
+      "file": "embedded_apps/uart_boot_loader_server/src/uart_boot_loader_server.adb",
+      "description": "Jump to the entry point (reset_handler) of the loaded bare-metal program",
+      "line": 27
     }
   ]
 }
