@@ -97,7 +97,9 @@ package body Uart_Boot_Loader_Server is
       Maybe_Received_Checksum : Maybe_Checksum_Type;
       Load_Cursor_Address : System.Address := Load_Address;
       Received_Byte : Interfaces.Unsigned_8;
-   begin
+
+   begin -- Load_Image_Over_Uart
+
       --  Initial handshake with sender:
       loop
          Received_Byte := Uart_Driver.Receive_Byte;

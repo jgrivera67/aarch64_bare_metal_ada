@@ -35,6 +35,15 @@ procedure App_Main is
       X := 1;
    end Cause_Data_Abort_Null_Pointer_Write;
 
+   procedure Cause_Data_Abort_Text_Segment_Write is
+      X : Interfaces.Unsigned_32
+         with Import,
+              External_Name => "__global_text_region_start";
+   begin
+      Utils.Print_String (LF & "Causing data abort for text segment write ..." & LF);
+      X := 0;
+   end Cause_Data_Abort_Text_Segment_Write;
+
    procedure Cause_Prefetch_Abort_Executing_From_Stack is
       X : Interfaces.Unsigned_32;
       procedure Bad_Boy
@@ -72,9 +81,10 @@ begin
    loop
       Utils.Print_String (LF & "1. Data abort for unmapped address write" & LF);
       Utils.Print_String ("2. Data abort for null pointer write" & LF);
-      Utils.Print_String ("3. Breakpoint" & LF);
+      Utils.Print_String ("3. Data abort for text segment write" & LF);
       Utils.Print_String ("4. Prefetch abort executing from the stack" & LF);
       Utils.Print_String ("5. Prefetch abort executing from null address" & LF);
+      Utils.Print_String ("6. Breakpoint" & LF);
       C := Utils.Get_Char;
       case C is
          when '1' =>
@@ -82,11 +92,13 @@ begin
          when '2' =>
             Cause_Data_Abort_Null_Pointer_Write;
          when '3' =>
-            CPU.Break_Point;
+            Cause_Data_Abort_Text_Segment_Write;
          when '4' =>
             Cause_Prefetch_Abort_Executing_From_Stack;
          when '5' =>
             Cause_Prefetch_Abort_Executing_From_Null_Address;
+         when '6' =>
+            CPU.Break_Point;
          when others =>
             Utils.Print_String (LF & "Invalid option: '");
             Utils.Put_Char (C);

@@ -102,7 +102,8 @@ package body Uart_Boot_Loader_Client is
       Packet_Retransmit_Count : Natural;
       Absolute_Packet_Number : Positive := 1;
       Actual_Data_Bytes_Transmitted : Natural := 0;
-   begin
+
+   begin --  Send_File
       Binary_IO.Open (File => File_Obj, Mode => Binary_IO.In_File,
                       Name => File_Name);
 
