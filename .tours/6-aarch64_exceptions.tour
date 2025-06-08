@@ -1,0 +1,125 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "6: aarch64_exceptions",
+  "steps": [
+    {
+      "title": "Introduction",
+      "description": "- An AArch64 CPU core can run in one of 4 exception levels (modes):\n  - EL3 - secure monitor mode (initial mode at machine boot time: ROM, EEPROM - second stage boot loder, BL31 - ARM Trusted Firmware)\n  - EL2 - hypervisor mode (Rapberry Pi bare-metal programs are booted in this mode)\n  - EL1 - supervisor mode (OS kernel mode, bare-metal programs in privileged mode)\n  - EL0 - user mode (unprivileged mode)\n\n- Each exception level has its own stack pointer, which is accessed via the SP banked register.\n- When the CPU is running at EL1, EL2 or EL3, it can use the EL0 stack pointer or its own ELx stack pointer. (We use the EL0 SP)\n- When the CPU is running at EL0, it can only use the EL0 stack pointer\n\nThe structure of the AArch64 interrupt vector table is shown below:\n\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/aarch64_interrupt_vector_table.svg)\n\nBelow is a sequence diagram showing the execution\npath of a synchronous hardware exception:\n\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/synchronous-hardware-exception.svg)\n\nBelow is a sequence diagram depicting the code\npath that is executed for Ada software exception. The `Last_Chance_Handler` global Ada exception handler prints an error message to the UART,\ndescribing the Ada exception, and executes a break instruction to trigger\na synchronous hardware exception. Upon return from the\nexception, it parks CPU.\n\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/ada-exception.svg)"
+    },
+    {
+      "file": "embedded_apps/aarch64_exceptions/src/app_main.adb",
+      "description": "Test program to trigger synchronous exceptions",
+      "line": 56
+    },
+    {
+      "file": "embedded_apps/aarch64_exceptions/src/app_main.adb",
+      "description": "Trigger data abort exception by writing to a variable located at an address where there is no RAM or MMIO space",
+      "line": 26
+    },
+    {
+      "file": "embedded_apps/aarch64_exceptions/src/app_main.adb",
+      "description": "Trigger break instruction exception ",
+      "line": 31
+    },
+    {
+      "file": "src/cpu.adb",
+      "description": "Execute a break instruction",
+      "line": 47
+    },
+    {
+      "file": "embedded_apps/aarch64_exceptions/src/app_main.adb",
+      "description": "- Trigger an assertion violation, which will raise an Ada exception.\n- Raising an Ada exceptin will cause the `Utils.Last_Chance_Handler` subprogram to get invoked.\n- `Utils.Last_Chance_Handler` executes a break instruction to trigger a synchronous exception.",
+      "line": 36
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "Bare-metal central Ada exception handler, as Ada exception propagation is disabled at compoile time.",
+      "line": 204
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "Execute break instruction to trigger a synchronous exception",
+      "line": 237
+    },
+    {
+      "file": "embedded_apps/aarch64_exceptions/src/app_main.adb",
+      "description": "- Raise an Ada exception, which will cause the `Utils.Last_Chance_Handler` subprogram to get invoked.\n- Utils.Last_Chance_Handler executes a break instruction to trigger a synchronous exception.",
+      "line": 41
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Synchronous exception handler gets invoked upon the occurrence of one of the following events:\n- data abort exception\n- prefetch abort exception\n- break instruction exception\n- self-hosted hardware breakpoint exception\n- self-hosted hardware watchpoint exception ",
+      "line": 216
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Switch to use EL0 stack pointer",
+      "line": 84
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Save CPU registers after entering an exception/interrupt handler and before invoking any Ada code.",
+      "line": 109
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Call Ada subprogram that keeps track of interrupt nestinng when entering an exception/interrupt handler",
+      "line": 136
+    },
+    {
+      "file": "src/cpu-interrupt_handling.adb",
+      "description": "Ada subprogram invoked when entering a top-level exception/interrupt handler after saving CPU registers",
+      "line": 156
+    },
+    {
+      "file": "src/cpu-interrupt_handling.adb",
+      "description": "Common Ada EL1 synchronous exception handler",
+      "line": 80
+    },
+    {
+      "file": "src/cpu-interrupt_handling.adb",
+      "description": "Handle BRK instruction exception",
+      "line": 72
+    },
+    {
+      "file": "src/cpu-interrupt_handling.adb",
+      "description": "Log diagnostic information about the exception",
+      "line": 25
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Call Ada subprogram that keeps track of exiting a top-level exception/interrupt handler",
+      "line": 165
+    },
+    {
+      "file": "src/cpu-interrupt_handling.adb",
+      "description": "Ada subprogram invoked on the return path on an exception/interrupt handler before restoring the CPU registers.\n\nNOTE: When implementing an RTOS, the thread scheduler can be invoked from this subprogram when the interrupt nesting counter drops to 0.",
+      "line": 166
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Restore CPU registers before returning from an exception/interrupt\n",
+      "line": 169
+    },
+    {
+      "file": "src/interrupt_handling_asm.S",
+      "description": "Return from exception/interrupt handler using ELR_EL1 as the return address and setting CPSR (PSTATE) to the value of SPSR_EL1",
+      "line": 199
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "Return here from break point exception",
+      "line": 241
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "System crash: park CPU in WFI loop with interrupts disabled",
+      "line": 188
+    },
+    {
+      "file": "src/cpu_asm.S",
+      "description": "Park CPU:\n- If booted from UART, jump back to UART bootloader server\n- If booted from SD card, go to WFI infinit loop with interrupts disabled  ",
+      "line": 11
+    }
+  ]
+}

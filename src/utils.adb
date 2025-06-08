@@ -216,7 +216,7 @@ package body Utils is
       end loop;
 
       --
-      --  Print exception message to UART:
+      --  Log Ada exception message:
       --
       if Last_Chance_Handler_Running (Cpu_Id) then
          Log_Error_Msg_Begin ("*** Recursive Ada Exception: '");

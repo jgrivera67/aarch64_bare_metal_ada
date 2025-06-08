@@ -1,0 +1,45 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "5: debug_message_logger",
+  "steps": [
+    {
+      "title": "Introduction",
+      "description": "![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/runtime_log.svg)"
+    },
+    {
+      "file": "src/utils-runtime_log.ads",
+      "description": "Runtime Message Logger APIs to record/print log messages.\n\nSince the minimal Ada runtime library that we use does not include secondary\nstack suport, we cannot use '&' to concatenate string variables (only constants).\nThus, the runtime logger provides the Log_XXXX_Msg_Begin/Log_XXXX_Msg_Part/Log_XXX_Msg_End to\nconstruct logging messages that combine string literals with string variables.",
+      "line": 17
+    },
+    {
+      "file": "src/utils-runtime_log.ads",
+      "description": "The Runtime loggger has two tunable parameters:\n- Buffer capture logging level: log messages at level lower than this level are not recorded\n  in the log buffer\n- UART console output logging level: log messages at level lower than this level are not\n  printed to the UART console.\n",
+      "line": 58
+    },
+    {
+      "file": "src/utils-runtime_log.ads",
+      "description": "Runtime log data structures",
+      "line": 75
+    },
+    {
+      "file": "src/utils-runtime_log.adb",
+      "description": "Implementation of message logging APIs:",
+      "line": 13
+    },
+    {
+      "file": "src/utils-runtime_log.adb",
+      "description": "Common logging service invoked from the publc logging APIs",
+      "line": 196
+    },
+    {
+      "file": "src/utils-runtime_log.adb",
+      "description": "This were log messsage's characters are stored in the runtime log buffer and sent to the UART console, if the current buffer/console logging levels allow it.",
+      "line": 304
+    },
+    {
+      "file": "embedded_apps/aarch64_runtime_log/src/app_main.adb",
+      "description": "Runtime message logger APIs in action",
+      "line": 27
+    }
+  ]
+}

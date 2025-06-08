@@ -12,6 +12,11 @@
       "line": 10
     },
     {
+      "file": "uart_boot_memory_layout.ld",
+      "description": "Bare-metal program loaded over UART is loaded at address 0x10_0000",
+      "line": 6
+    },
+    {
       "file": "embedded_apps/uart_boot_loader_server/src/app_main.adb",
       "description": "`Load_Image_Over_Uart` runs the receiver side of the a modified Xmodem fiel transfer protocol over UART.",
       "line": 27
@@ -25,6 +30,11 @@
       "file": "embedded_apps/uart_boot_loader_server/src/uart_boot_loader_server.adb",
       "description": "Jump to the entry point (reset_handler) of the loaded bare-metal program",
       "line": 27
+    },
+    {
+      "file": "embedded_apps/uart_boot_loader_server/src/uart_boot_loader_server.adb",
+      "description": "Jump to the specified reset handler address",
+      "line": 167
     }
   ]
 }

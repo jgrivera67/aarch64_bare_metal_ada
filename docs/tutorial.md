@@ -193,6 +193,8 @@ by running the `build_all.sh` script.
 <a id="section_4"></a>
 ## Minimal bare-metal platform-independent Ada runtime library (RTS)
 
+See VS Code code tour 2.
+
 <a id="section_5"></a>
 ## AArch64 bare-metal Ada "Hello World" program
 
@@ -220,41 +222,119 @@ cp $bin_file /Volumes/bootfs
 sync
 ```
 
-[Vscode code tour 3: aarch64_ello_ada](../.tours/3-aarch64_hello_ada.tour)
+See VS Code code tour 3.
 
 <a id="section_6"></a>
 ## Writing your own UART bootloader for Raspberry Pi bare-metal programs
 
-[Vscode code tour 4: uart_boot_loader_server](../.tours/4-uart_bootloader_server.tour)
+![](diagram_images/raspberrypi_uart_boot_sequence.svg)
+
+![](diagram_images/baremetal_memory_map2.svg)
+
+See VS Code code tour 4.
 
 <a id="section_7"></a>
 ## Writing your own bare-metal debug message logger in Ada
 
+![](diagram_images/runtime_log.svg)
+
+See VS Code code tour 5.
+
 <a id="section_8"></a>
 ## AArch64 bare-metal exception handling in Ada
+
+- An AArch64 CPU core can run in one of 4 exception levels (modes):
+  - EL3 - secure monitor mode (initial mode at machine boot time: ROM, EEPROM - second stage boot loder, BL31 - ARM Trusted Firmware)
+  - EL2 - hypervisor mode (Rapberry Pi bare-metal programs are booted in this mode)
+  - EL1 - supervisor mode (OS kernel mode, bare-metal programs in privileged mode)
+  - EL0 - user mode (unprivileged mode)
+
+- Each exception level has its own stack pointer, which is accessed via the SP banked register.
+- When the CPU is running at EL1, EL2 or EL3, it can use the EL0 stack pointer or its own ELx stack pointer. (We use the EL0 SP)
+- When the CPU is running at EL0, it can only use the EL0 stack pointer
+
+The structure of the AArch64 interrupt vector table is shown below:
+
+![](diagram_images/aarch64_interrupt_vector_table.svg)
+
+Below is a sequence diagram showing the execution
+path of a synchronous hardware exception:
+
+![](diagram_images/synchronous-hardware-exception.svg)
+
+Below is a sequence diagram depicting the code
+path that is executed for Ada software exception. The `Last_Chance_Handler` global Ada exception handler executes a break instruction to trigger
+a synchronous exception. Uon return from the
+exception, it parks CPU.
+
+![](diagram_images/ada-exception.svg)
+
+See VS Code code tour 6.
 
 <a id="section_9"></a>
 ## Writing your own self-hosted mini GDB server in Ada
 
-The GDB remote serial protcol (RSP) is a simple ASCII-based request/response protocol:
+The self-hosted debugger gets executed when a synchronous hardware exception
+is triggered by a CPU core. The self-hosted debugger runs a GDB server,
+as shown below:
+
+![](diagram_images/enetering-self-hosted-debugger-on-synchronous-exception.svg)
+
+The GDB Remote Seral Protocol (RSP) is a request/response ASCII-based protocol used
+to communicate a GDB client (e.g., command-line gdb, VS Code gdb GUI, ddd GUI)
+running on a development host (e.g., Linux, MacOS or Windows)
+with a GDB server (also known as gdb stub) running on the target platform
+being debugged.
 
 ![](diagram_images/remote_gdb.svg)
 
-NOTE: For GDB remote protocol packet formats see
-  https://sourceware.org/gdb/onlinedocs/gdb/Packets.html
+ The request/response packet formats of the GDB remote serial protocol are
+ described at
+  https://sourceware.org/gdb/onlinedocs/gdb/Packets.html.
 
+See VS Code code tour 7.
 
 <a id="section_10"></a>
 ## AArch64 bare-metal memory protection using the ARMv8-A MMU
 
+Memory Access when the MMU and caches are enabled:
+
+![](diagram_images/memory_access.svg)
+
+MMU Translation Tables
+
+![](diagram_images/mmu_translation_tables.svg)
+
+Virtual-Address to Physical-Address Identity Mapping:
+
+![](diagram_images/va-to-pa-identity-mapping.svg)
+
+Memory access sequence from a load instruction
+
+![](diagram_images/load~instruction-memory-access-with-mmu-and-caches.svg)
+
+See VS Code code tour 8.
+
 <a id="section_11"></a>
 ## AArch64 bare-metal interrupt handling in Ada
+
+- Private Peripheral (PPI) Interrupt handling
+![](diagram_images/timer-interrupt-handling.svg)
+
+- Shared Peripherla (SPI) Interrupt handling
+![](diagram_images/UART-interrupt-handling.svg)
+
+See VS Code code tour 9.
 
 <a id="section_12"></a>
 ## AArch64 bare-metal multicore in Ada
 
+See VS Code code tour A.
+
 <a id="section_13"></a>
 ## AArch64 bare-metal multicore interrupt handling in Ada
+
+See VS Code code tour B.
 
 <a id="section_14"></a>
 ## Writing your own multicore RTOS for AArch64

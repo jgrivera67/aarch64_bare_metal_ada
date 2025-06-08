@@ -285,44 +285,379 @@ activate Uart_Boot_Loader_Server
 deactivate Uart_Boot_Loader_Server
 @enduml
 
-@startuml entering-gdbserver-on-prefetch-abort
-title Entering Self-hosted GDB server on Prefetch Abort
-actor "prefetch abort exception"
-"prefetch abort exception" -> "interrupt_handling_asm.S" : same_el_with_sp_el0_synchronous_exception_handler
-activate "interrupt_handling_asm.S"
-   "interrupt_handling_asm.S" ->  "interrupt_handling_asm.S" : INTERRUPT_HANDLER_PROLOG
-   activate "interrupt_handling_asm.S"
-   deactivate "interrupt_handling_asm.S"
-   "interrupt_handling_asm.S" ->  "CPU.Interrupt_Handling" : Ada_Handle_EL1_Synchronous_Exception
-   activate "CPU.Interrupt_Handling"
-      "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : error_exception_handler()
-      activate "CPU.Interrupt_Handling"
-      deactivate "CPU.Interrupt_Handling"
-      "arch-support.c" ->  "gdbserver.c" : run_gdb_server()
-      activate "gdbserver.c"
-      deactivate "gdbserver.c"
-    deactivate "arch-support.c"
-  deactivate "arch-support.c"
-deactivate "arch-support-asm.S"
+@startuml synchronous-hardware-exception
+title Synchronous Hardware Exception
+actor "synchronous hardware exception"
+activate "synchronous hardware exception"
+   "synchronous hardware exception" -> "interrupt_handling_Asm.S" : same_el_with_sp_el0_synchronous_exception_handler
+   activate "interrupt_handling_Asm.S"
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_PROLOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : save CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Enter_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+      deactivate "interrupt_handling_Asm.S"
+
+      "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Handle_EL1_Synchronous_Exception
+      activate  "CPU.Interrupt_Handling"
+         alt data abort or prefetch abort exceptions
+            "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Handle_El1_Error_Exception
+            activate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Print_Exception_Info
+               activate  "CPU.Interrupt_Handling"
+               deactivate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Self_Hosted_Debug" : Run_Debugger
+               activate  "CPU.Self_Hosted_Debug"
+               deactivate  "CPU.Self_Hosted_Debug"
+               "CPU.Interrupt_Handling" -> "Utils" : System_Crash
+               activate "Utils"
+                  "Utils" -> "cpu_asm.S" : Park_Cpu
+                  activate "cpu_asm.S"
+                  deactivate "cpu_asm.S"
+               deactivate "Utils"
+            deactivate  "CPU.Interrupt_Handling"
+         else breakpoint or watchpoint or break instruction exceptions
+            "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Handle_El1_Debug_Exception
+            activate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Print_Exception_Info
+               activate  "CPU.Interrupt_Handling"
+                  "Utils" -> "Utils.Runtime_Log" : Log_Error_*
+                  note right
+                     Print hardware exception
+                     error message to UART
+                  end note
+                  activate "Utils.Runtime_Log"
+                  deactivate "Utils.Runtime_Log"
+               deactivate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Self_Hosted_Debug" : Run_Debugger
+               activate  "CPU.Self_Hosted_Debug"
+               deactivate  "CPU.Self_Hosted_Debug"
+            deactivate  "CPU.Interrupt_Handling"
+         end alt
+      deactivate  "CPU.Interrupt_Handling"
+
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_EPILOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Exit_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : restore CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "synchronous hardware exception" : eret
+      deactivate "interrupt_handling_Asm.S"
+   deactivate "interrupt_handling_Asm.S"
+deactivate "synchronous hardware exception"
 @enduml
 
-@startuml entering-gdbserver-on-data-abort
-title Entering Self-hosted GDB server on Data Abort
-actor "data abort exception"
-"data abort exception" -> "arch-support-asm.S" : data_abort_handler()
-activate "arch-support-asm.S"
-  "arch-support-asm.S" ->  "arch-support.c" : c_data_abort_handler()
-  activate "arch-support.c"
-    "arch-support.c" ->  "arch-support.c" : error_exception_handler()
-    activate "arch-support.c"
-      "arch-support.c" ->  "gdbserver.c" : run_gdb_server()
+@startuml ada-exception
+title Ada Excception
+actor "bare-metal Ada program"
+"bare-metal Ada program" -> "bare-metal Ada program": Ada exception
+activate "bare-metal Ada program"
+   "bare-metal Ada program" -> "Utils" : Last_Chance_Handler
+   activate "Utils"
+      "Utils" -> "Utils.Runtime_Log" : Log_Error_*
       note right
-        called via g_fault_exception_callback_p()
-        function pointer
+         Print Ada exception error message to UART
       end note
-      activate "gdbserver.c"
-      deactivate "gdbserver.c"
-    deactivate "arch-support.c"
-  deactivate "arch-support.c"
-deactivate "arch-support-asm.S"
+      activate "Utils.Runtime_Log"
+      deactivate "Utils.Runtime_Log"
+      actor "CPU core"
+      "Utils" -> "CPU core" : BRK instruction
+      note right
+      Synchronous hardware exception
+      end note
+      activate "CPU core"
+         "CPU core" -> "interrupt_handling_Asm.S" : same_el_with_sp_el0_synchronous_exception_handler
+         activate "interrupt_handling_Asm.S"
+            "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Handle_EL1_Synchronous_Exception
+            activate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Handle_El1_Debug_Exception
+               activate  "CPU.Interrupt_Handling"
+                  "CPU.Interrupt_Handling" -> "CPU.Self_Hosted_Debug" : Run_Debugger
+                  activate  "CPU.Self_Hosted_Debug"
+                  deactivate  "CPU.Self_Hosted_Debug"
+               deactivate  "CPU.Interrupt_Handling"
+            deactivate  "CPU.Interrupt_Handling"
+            "interrupt_handling_Asm.S" -> "Utils" : eret
+         deactivate "interrupt_handling_Asm.S"
+      deactivate "CPU core"
+      "Utils" -> "Utils" : Systen_Crash
+      activate "Utils"
+         "Utils" -> "cpu_asm.S" : Park_Cpu
+         activate "cpu_asm.S"
+         deactivate "cpu_asm.S"
+      deactivate "Utils"
+   deactivate "Utils"
+deactivate "bare-metal Ada program"
+@enduml
+
+@startuml enetering-self-hosted-debugger-on-synchronous-exception
+title Entering Self-hosted debugger on synchronous hardware exception
+actor "synchronous hardware exception"
+activate "synchronous hardware exception"
+   "synchronous hardware exception" -> "interrupt_handling_Asm.S" : same_el_with_sp_el0_synchronous_exception_handler
+   activate "interrupt_handling_Asm.S"
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_PROLOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : save CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Enter_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+      deactivate "interrupt_handling_Asm.S"
+
+      "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Handle_EL1_Synchronous_Exception
+      activate  "CPU.Interrupt_Handling"
+         alt data abort or prefetch abort exceptions
+            "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Handle_El1_Error_Exception
+            activate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Print_Exception_Info
+               activate  "CPU.Interrupt_Handling"
+               deactivate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Self_Hosted_Debug" : Run_Debugger
+               activate  "CPU.Self_Hosted_Debug"
+                  "CPU.Self_Hosted_Debug" -> "Gdb_Server" : Run_Gdb_Server
+                  activate  "Gdb_Server"
+                  deactivate  "Gdb_Server"
+               deactivate  "CPU.Self_Hosted_Debug"
+               "CPU.Interrupt_Handling" -> "Utils" : System_Crash
+               activate "Utils"
+                  "Utils" -> "cpu_asm.S" : Park_Cpu
+                  activate "cpu_asm.S"
+                  deactivate "cpu_asm.S"
+               deactivate "Utils"
+            deactivate  "CPU.Interrupt_Handling"
+         else breakpoint or watchpoint or break instruction exceptions
+            "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Handle_El1_Debug_Exception
+            activate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Interrupt_Handling" : Print_Exception_Info
+               activate  "CPU.Interrupt_Handling"
+                  "Utils" -> "Utils.Runtime_Log" : Log_Error_*
+                  note right
+                     Print hardware exception
+                     error message to UART
+                  end note
+                  activate "Utils.Runtime_Log"
+                  deactivate "Utils.Runtime_Log"
+               deactivate  "CPU.Interrupt_Handling"
+               "CPU.Interrupt_Handling" -> "CPU.Self_Hosted_Debug" : Run_Debugger
+               activate  "CPU.Self_Hosted_Debug"
+                  "CPU.Self_Hosted_Debug" -> "Gdb_Server" : Run_Gdb_Server
+                  activate  "Gdb_Server"
+                  deactivate  "Gdb_Server"
+               deactivate  "CPU.Self_Hosted_Debug"
+            deactivate  "CPU.Interrupt_Handling"
+         end alt
+      deactivate  "CPU.Interrupt_Handling"
+
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_EPILOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Exit_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : restore CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "synchronous hardware exception" : eret
+      deactivate "interrupt_handling_Asm.S"
+   deactivate "interrupt_handling_Asm.S"
+deactivate "synchronous hardware exception"
+@enduml
+
+@startuml load~instruction-memory-access-with-mmu-and-caches
+title Memory access from a load instruction with MMU and caches enables
+actor "CPU core"
+"CPU core" -> "CPU core" : load instruction
+activate "CPU core"
+"CPU core" -> "TLB" : VA-to-PA translation lookup
+   alt TLB hit
+      "TLB" -> "CPU core" : VA-to-PA translation entry
+      alt access allowed
+         "CPU core" -> "Caches" : data lookup
+         "Caches" -> "Caches" : L1 data cache lookup
+            alt L1 data cache hit
+               "Caches" -> "CPU core" : data
+            else
+               "Caches" -> "Caches" : L2 cache lookup
+               alt L2 cache hit
+                  "Caches" -> "CPU core" : data
+               else
+                  "Caches" -> "Caches" : L3 cache lookup
+                  alt L3 cache hit
+                     "Caches" -> "CPU core" : data
+                  else cache miss
+                     "Caches" -> "CPU core" : cache miss
+                     "CPU core" -> "Physical Memory" : read cache line
+                     "Physical Memory" -> "Caches" : allocate and fill cache line
+                     "Physical Memory" -> "CPU core" : data
+                  end alt
+               end alt
+            end alt
+         alt Cache hit
+         end alt
+      else access not allowed
+         "CPU core" -> "CPU core" : Ttrigger data abort excpetion
+      end alt
+   else TLB miss
+      "TLB" -> "CPU core" : TLB miss
+      actor "MMU page table\nwalker"
+      "CPU core" -> "MMU page table\nwalker" : VA-to-PA translation lookup
+         alt valid translation entry found
+            "MMU page table\nwalker" -> TLB : VA-to-PA translation entry
+            "MMU page table\nwalker" -> "CPU core" : VA-to-PA translation entry
+         else page fault
+            "MMU page table\nwalker" -> "CPU core" : page fault
+            "CPU core" -> "CPU core" : trigger data abort exception
+         end alt
+   end alt
+deactivate "CPU core"
+@enduml
+
+@startuml timer-interrupt-handling
+title Timer Interrupt Handling
+actor "Generic Timer perihperal"
+"Generic Timer perihperal" -> "GIC 400\nInterrupt Controller" : PPI interrupt
+note right
+Private Peripheral Interrupt
+end note
+"GIC 400\nInterrupt Controller" -> "CPU core" : IRQ interrupt
+   "CPU core" -> "interrupt_handling_Asm.S" : same_el_with_sp_el0_irq_interrupt_handler
+   activate "interrupt_handling_Asm.S"
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_PROLOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : save CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Enter_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+      deactivate "interrupt_handling_Asm.S"
+
+      "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Handle_EL1_Irq_Interrupt
+      activate  "CPU.Interrupt_Handling"
+         "CPU.Interrupt_Handling" -> "Interrupt_Controller_Driver" : GIC_Interrupt_Handler (Cpu_Interrupt_Irq)
+         activate  "Interrupt_Controller_Driver"
+            "Interrupt_Controller_Driver" -> "GIC 400\nInterrupt Controller" : Read GICC.ICC_IAR register
+            note right
+            Notifiy the interrutpt controller that
+            handling of the interrupt has started
+            (Interrupt Acknowledgement)
+            end note
+            "Interrupt_Controller_Driver" -> "CPU.Interrupt_Handling" : Enable_Cpu_Interrupting
+            note right
+            Enable interrupts at the CPU to
+            support nested interrupts
+            end note
+            activate  "CPU.Interrupt_Handling"
+            deactivate  "CPU.Interrupt_Handling"
+            "Interrupt_Controller_Driver" -> "Timer_Driver" : Timer_Interrupt_Handler
+            activate  "Timer_Driver"
+               "Timer_Driver" -> "Application" : Timer interrupt callback
+               activate  "Application"
+               deactivate  "Application"
+            deactivate  "Timer_Driver"
+            "Interrupt_Controller_Driver" -> "CPU.Interrupt_Handling" : Disable_Cpu_Interrupting
+            activate  "CPU.Interrupt_Handling"
+            deactivate  "CPU.Interrupt_Handling"
+            "Interrupt_Controller_Driver" -> "GIC 400\nInterrupt Controller" : Write GICC.ICC_EOIR register
+            note right
+            Notify the interrupt controller that handling
+            for the interrupt has been completed.
+            (End of Interrupt)
+            end note
+         deactivate  "Interrupt_Controller_Driver"
+      deactivate  "CPU.Interrupt_Handling"
+
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_EPILOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Exit_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : restore CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : eret
+         note right
+            Return to interrupted codde
+         end note
+      deactivate "interrupt_handling_Asm.S"
+   deactivate "interrupt_handling_Asm.S"
+@enduml
+
+@startuml UART-interrupt-handling
+title UART Rx Interrupt Handling
+actor "UART perihperal"
+"UART perihperal" -> "GIC 400\nInterrupt Controller" : SPI interrupt
+note right
+Shared Peripheral Interrupt
+(routed to configured target CPU)
+end note
+"GIC 400\nInterrupt Controller" -> "CPU core" : IRQ interrupt
+   "CPU core" -> "interrupt_handling_Asm.S" : same_el_with_sp_el0_irq_interrupt_handler
+   activate "interrupt_handling_Asm.S"
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_PROLOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : save CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Enter_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+      deactivate "interrupt_handling_Asm.S"
+
+      "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Handle_EL1_Irq_Interrupt
+      activate  "CPU.Interrupt_Handling"
+         "CPU.Interrupt_Handling" -> "Interrupt_Controller_Driver" : GIC_Interrupt_Handler (Cpu_Interrupt_Irq)
+         activate  "Interrupt_Controller_Driver"
+            "Interrupt_Controller_Driver" -> "GIC 400\nInterrupt Controller" : Read GICC.ICC_IAR register
+            note right
+            Notifiy the interrutpt controller that
+            handling of the interrupt has started
+            (Interrupt Acknowledgement)
+            end note
+            "Interrupt_Controller_Driver" -> "CPU.Interrupt_Handling" : Enable_Cpu_Interrupting
+            note right
+            Enable interrupts at the CPU to
+            support nested interrupts
+            end note
+            activate  "CPU.Interrupt_Handling"
+            deactivate  "CPU.Interrupt_Handling"
+            "Interrupt_Controller_Driver" -> "Uart_Driver" : Uart_Interrupt_Handler
+            activate  "Uart_Driver"
+               "Uart_Driver" -> "Application" : Uart Rx interrupt callback
+               activate  "Application"
+               deactivate  "Application"
+            deactivate  "Uart_Driver"
+            "Interrupt_Controller_Driver" -> "CPU.Interrupt_Handling" : Disable_Cpu_Interrupting
+            activate  "CPU.Interrupt_Handling"
+            deactivate  "CPU.Interrupt_Handling"
+            "Interrupt_Controller_Driver" -> "GIC 400\nInterrupt Controller" : Write GICC.ICC_EOIR register
+            note right
+            Notify the interrupt controller that handling
+            for the interrupt has been completed.
+            (End of Interrupt)
+            end note
+         deactivate  "Interrupt_Controller_Driver"
+      deactivate  "CPU.Interrupt_Handling"
+
+      "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : INTERRUPT_HANDLER_EPILOG
+      activate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "CPU.Interrupt_Handling" : Ada_Exit_Interrupt_Context
+         activate  "CPU.Interrupt_Handling"
+         deactivate  "CPU.Interrupt_Handling"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : restore CPU registers
+         activate "interrupt_handling_Asm.S"
+         deactivate "interrupt_handling_Asm.S"
+         "interrupt_handling_Asm.S" -> "interrupt_handling_Asm.S" : eret
+         note right
+            Return to interrupted codde
+         end note
+      deactivate "interrupt_handling_Asm.S"
+   deactivate "interrupt_handling_Asm.S"
 @enduml

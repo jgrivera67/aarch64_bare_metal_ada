@@ -1,0 +1,7 @@
+{
+   "projectFile": "embedded_apps/aarch64_multicore_interrupts/aarch64_multicore_interrupts.gpr",
+   "scenarioVariables": {
+      "Board": "rpi5",
+      "Uart_Boot": "yes"
+   }
+}

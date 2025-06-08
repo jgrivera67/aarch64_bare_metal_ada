@@ -1,6 +1,0 @@
-{
-  "$schema": "https://aka.ms/codetour-schema",
-  "title": "8: self_hosted_debugger",
-  "steps": [],
-  "description": "Self-hosted GDB server"
-}

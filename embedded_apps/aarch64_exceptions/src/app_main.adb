@@ -34,7 +34,8 @@ procedure App_Main is
 
    procedure Cause_Assert_Failure is
    begin
-      pragma Assert (False, "This is an assert failure for testing purposes");
+      --  pragma Assert (False, "This is an assert failure for testing purposes");
+      pragma Assert (False);
    end Cause_Assert_Failure;
 
    procedure Raise_Ada_Exception is

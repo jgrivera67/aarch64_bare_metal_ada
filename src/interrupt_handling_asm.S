@@ -64,8 +64,7 @@ interrupt_vector_table:
       b aarch32_lower_el_serror_exception_handler      // offset 0x780
 
 /**
- * Macro to be invoked at the beginning of top-level EL1 interrupt handlers from
- * which the RTOS scheduler can be called upon exit.
+ * Macro to be invoked at the beginning of top-level EL1 interrupt handlers.
  *
  * It first switches the SPSel to SP_EL0, instead of corresponding exception
  * SP_ELx. Then it saves all general purpose registers on the stack. All registers
@@ -106,7 +105,7 @@ interrupt_vector_table:
        * Save general-purpose registers on the stack:
        *
        * NOTE: SP does not need to be saved here,
-       * as it is saved by the calling code.
+       * as it is saved by the Ada_Enter_Interrupt_Context.
        */
       stp x0, x1, [sp, #-16]!
       stp x2, x3, [sp, #-16]!
@@ -149,8 +148,7 @@ interrupt_vector_table:
       .endm
 
 /**
- * Macro to be invoked at the end of top-level EL1 interrupt
- * handlers from which the RTOS scheduler can be called upon exit.
+ * Macro to be invoked at the end of top-level EL1 interrupt handlers.
  *
  * It restores the CPU state that was saved by a previous invocation to
  * Interrupt_Handler_Prolog.
@@ -231,13 +229,8 @@ same_el_with_sp_el0_synchronous_exception_handler:
       .global same_el_with_sp_el0_irq_interrupt_handler
       .func same_el_with_sp_el0_irq_interrupt_handler
    same_el_with_sp_el0_irq_interrupt_handler:
-      // Save the current thread's CPU state on its own stack:
       INTERRUPT_HANDLER_PROLOG
-
       bl ada_handle_el1_irq_interrupt
-
-      // Run the thread scheduler to select next thread to run and
-      // resume execution of the newly selected thread
       INTERRUPT_HANDLER_EPILOG
       .endfunc
 
@@ -250,13 +243,8 @@ same_el_with_sp_el0_synchronous_exception_handler:
       .global same_el_with_sp_el0_fiq_interrupt_handler
       .func same_el_with_sp_el0_fiq_interrupt_handler
    same_el_with_sp_el0_fiq_interrupt_handler:
-      // Save the current thread's CPU state on its own stack:
       INTERRUPT_HANDLER_PROLOG
-
       bl ada_handle_el1_fiq_interrupt
-
-      // Run the thread scheduler to select next thread to run and
-      // resume execution of the newly selected thread
       INTERRUPT_HANDLER_EPILOG
       .endfunc
 
@@ -357,13 +345,8 @@ same_el_with_sp_el0_synchronous_exception_handler:
       .global lower_el_irq_interrupt_handler
       .func lower_el_irq_interrupt_handler
    lower_el_irq_interrupt_handler:
-      // Save the current thread's CPU state on its own stack:
       INTERRUPT_HANDLER_PROLOG
-
       bl ada_handle_el1_irq_interrupt
-
-      // Run the thread scheduler to select next thread to run and
-      // resume execution of the newly selected thread
       INTERRUPT_HANDLER_EPILOG
       .endfunc
 
@@ -375,13 +358,8 @@ same_el_with_sp_el0_synchronous_exception_handler:
       .global lower_el_fiq_interrupt_handler
       .func lower_el_fiq_interrupt_handler
    lower_el_fiq_interrupt_handler:
-      // Save the current thread's CPU state on its own stack:
       INTERRUPT_HANDLER_PROLOG
-
       bl ada_handle_el1_fiq_interrupt
-
-      // Run the thread scheduler to select next thread to run and
-      // resume execution of the newly selected thread
       INTERRUPT_HANDLER_EPILOG
       .endfunc
 

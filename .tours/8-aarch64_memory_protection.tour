@@ -1,0 +1,10 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "8: aarch64_memory_protection",
+  "steps": [
+    {
+      "title": "Introduction",
+      "description": "Memory access when the MMU and caches are enabled:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/memory_access.svg)\n\nMMU Translation Tables\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/mmu_translation_tables.svg)\n\nVirtual-Address to Physical-Address identity mapping:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/va-to-pa-identity-mapping.svg)\n\nLoad instruction memory access sequence:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/load~instruction-memory-access-with-mmu-and-caches.svg)"
+    }
+  ]
+}

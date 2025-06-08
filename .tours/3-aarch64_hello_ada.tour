@@ -8,6 +8,11 @@
       "line": 3
     },
     {
+      "file": "sd_card_boot_memory_layout.ld",
+      "description": "The reset handler is placed at the beginning of the bare-metal prgoram's binary image",
+      "line": 20
+    },
+    {
       "file": "src/reset_handler.S",
       "description": "Reset handler of a bare-metal program invoked from the Raspberry Pi OS bootloader:\n- Bare-metal boot sequence for Raspberry Pi 4:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/raspberrypi4_boot_sequence.svg)\n- Bare-metal boot sequence for Raspberry Pi 5:\n- ![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/raspberrypi5_boot_sequence.svg)",
       "line": 12
@@ -31,6 +36,26 @@
       "file": "src/reset_handler.S",
       "description": "Call gnatbind-generated main",
       "line": 73
+    },
+    {
+      "file": "embedded_apps/aarch64_hello_ada/src/app_main.adb",
+      "description": "App_Main invoked from gantbind-generated main",
+      "line": 14
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "Prints a string to the debug UART one character at a time",
+      "line": 25
+    },
+    {
+      "file": "src/utils.adb",
+      "description": "Prints a character on the UART.\nFor ASCII.LF, it sends the sequence: ASCII.CR ASCII.LF ",
+      "line": 17
+    },
+    {
+      "file": "src/uart_driver.adb",
+      "description": "Transmit one byte to the Raspberry Pi's debug UART",
+      "line": 132
     },
     {
       "file": "src/reset_handler.S",

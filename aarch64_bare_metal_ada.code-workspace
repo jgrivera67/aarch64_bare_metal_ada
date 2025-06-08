@@ -6,7 +6,11 @@
 	],
 	"settings": {
 		"sarif-viewer.connectToGithubCodeScanning": "off",
-		"ada.projectFile": "aarch64_baremetal_ada.gpr",
-		"plantuml.exportOutDir": "docs/diagram_images"
+		"ada.projectFile": "embedded_apps/aarch64_multicore_interrupts/aarch64_multicore_interrupts.gpr",
+		"plantuml.exportOutDir": "docs/diagram_images",
+		"ada.scenarioVariables": {
+			"Board": "rpi5",
+			"Uart_Boot": "yes"
+		}
 	}
 }

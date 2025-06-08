@@ -15,7 +15,7 @@ export BUILD_PREFIX="${HOME}/opt/cross/${BUILD_TARGET}"
 export PATH=/opt/gcc-14.2.0-3-aarch64/bin:$PATH
 
 # The host target triplet.
-#export HOST="arm64-apple-darwin24.2.0"
+#export HOST="arm64-apple-darwin24.5.0"
 export HOST="aarch64-apple-darwin23"
 
 # Update the PATH variable for this script so it includes the build directory.

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "9: aarch64_interrupts",
+  "steps": [
+    {
+      "title": "Introduction",
+      "description": "- Private Peripherla (PPI) Interrupt handling\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/timer-interrupt-handling.svg)\n\n- Shared Peripherla (SPI) Interrupt handling\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/UART-interrupt-handling.svg)"
+    }
+  ]
+}
