@@ -458,14 +458,13 @@ private
    --
    --  Translation Control Register for ELx
    --  - T0SZ, SH0, TG0: controls the translation regime for the translation
-   --    table pointed to by TTBR0_ELx. The maximum address range that can be
-   --    covered by TTBR0_ELx. By convention TTBR0_ELx is used for the lower
-   --    half of the 64-bit address space (typically user space):
+   --    table pointed to by TTBR0_ELx. By convention TTBR0_ELx is used for
+   --    the lower half of the 64-bit address space (typically user space):
    --    0x0000_0000_0000_0000 .. 0x000F_FFFF_FFFF_FFFF
    --  - T1SZ, EPD1, SH1, TG1: controls the translation regime for the translation
-   --    table pointed to by TTBR1_ELx. By convention TTBR0_ELx is used for the lower
-   --    half of the 64-bit address space (typically user space):
-   --    0xFFFF_FFFF_FFFF_FFFF .. 0xFFF0_0000_0000_0000
+   --    table pointed to by TTBR1_ELx. By convention TTBR0_ELx is used for the
+   --    upper half of the 64-bit address space (typically user space):
+   --    0xFFF0_0000_0000_0000 .. 0xFFFF_FFFF_FFFF_FFFF
    --
    type TCR_Type (As_Value : Boolean := True)  is record
       case As_Value is
