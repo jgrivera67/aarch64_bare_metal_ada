@@ -9,7 +9,7 @@
 #
 name = "aarch64_baremetal_ada"
 description = "AArch64 Baremetal Ada"
-version = "2.0.0"
+version = "1.0.0"
 licenses = "Apache-2.0"
 website = "https://github.com/jgrivera67/aarch64_bare_metal_ada"
 tags = ["aarch64"]

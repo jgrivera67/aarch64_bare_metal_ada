@@ -18,7 +18,7 @@ alias build_rpi5_uart_boot='alr build -- -XBoard=rpi5 -XUart_Boot=yes'
 alias clean_rpi5_uart_boot='alr clean -- -XBoard=rpi5 -XUart_Boot=yes'
 alias run_ser2net='/opt/homebrew/sbin/ser2net -n -d -l -c ./ser2net.yaml -P /tmp/ser2net.pid &'
 alias my_uart_rpi4='my_uart /dev/tty.usbserial-0001'
-alias my_uart_rpi5='my_uart /dev/tty.usbmodem112202'
+alias my_uart_rpi5='my_uart /dev/tty.usbmodem12402'
 
 function gen_lst_arm64
 {
