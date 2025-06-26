@@ -470,8 +470,8 @@ activate "synchronous hardware exception"
 deactivate "synchronous hardware exception"
 @enduml
 
-@startuml load~instruction-memory-access-with-mmu-and-caches
-title Memory access from a load instruction with MMU and caches enables
+@startuml load-instruction-memory-access-with-mmu-and-caches
+title Memory access from a load instruction with MMU and caches enabled
 actor "CPU core"
 "CPU core" -> "CPU core" : load instruction
 activate "CPU core"
@@ -499,8 +499,6 @@ activate "CPU core"
                   end alt
                end alt
             end alt
-         alt Cache hit
-         end alt
       else access not allowed
          "CPU core" -> "CPU core" : Ttrigger data abort excpetion
       end alt

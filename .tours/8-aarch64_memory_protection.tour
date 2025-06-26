@@ -4,7 +4,67 @@
   "steps": [
     {
       "title": "Introduction",
-      "description": "Memory access when the MMU and caches are enabled:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/memory_access.svg)\n\nMMU Translation Tables\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/mmu_translation_tables.svg)\n\nVirtual-Address to Physical-Address identity mapping:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/va-to-pa-identity-mapping.svg)\n\nLoad instruction memory access sequence:\n![](/Users/jgrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/load~instruction-memory-access-with-mmu-and-caches.svg)"
+      "description": "Memory access when the MMU and caches are enabled:\n![](/home/josegrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/memory_access.svg)\n\nMMU Translation Tables\n![](/home/josegrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/mmu_translation_tables.svg)\n\nVirtual-Address to Physical-Address identity mapping:\n![](/home/josegrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/va-to-pa-identity-mapping.svg)\n\nLoad instruction memory access sequence:\n![](/home/josegrivera/my-projects/aarch64_bare_metal_ada/docs/diagram_images/load~instruction-memory-access-with-mmu-and-caches.svg)"
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "64-bit translation table entry",
+      "line": 288
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "Per-CPU translation tables tree",
+      "line": 651
+    },
+    {
+      "file": "src/cpu-memory_protection.adb",
+      "description": "Initialize MMU-based memory protection",
+      "line": 22
+    },
+    {
+      "file": "src/cpu-memory_protection.adb",
+      "description": "Intialize MMU",
+      "line": 131
+    },
+    {
+      "file": "src/cpu_asm.S",
+      "description": "Memory for Translation tables themselves allocated here",
+      "line": 47
+    },
+    {
+      "file": "src/cpu-memory_protection.adb",
+      "description": "Populate MMU tranlation tables, definining translations for the various memory regions",
+      "line": 36
+    },
+    {
+      "file": "src/cpu-memory_protection.adb",
+      "description": "Enabling the MMU to do address translation",
+      "line": 778
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "Specfication of subprogram that populates translations for a given virtual address range",
+      "line": 844
+    },
+    {
+      "file": "src/cpu-memory_protection.adb",
+      "description": "Creating translations for a given address range\n",
+      "line": 226
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "Mapping virtual address to level2 table entry index",
+      "line": 686
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "Mapping virtual address to level3 table entry index",
+      "line": 698
+    },
+    {
+      "file": "src/cpu-memory_protection.ads",
+      "description": "Mapping virtual address to level1 table entry index",
+      "line": 677
     }
   ]
 }

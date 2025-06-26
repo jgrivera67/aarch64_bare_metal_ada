@@ -301,6 +301,10 @@ Memory Access when the MMU and caches are enabled:
 
 ![](diagram_images/memory_access.svg)
 
+Memory access sequence from a load instruction
+
+![](diagram_images/load-instruction-memory-access-with-mmu-and-caches.svg)
+
 MMU Translation Tables
 
 ![](diagram_images/mmu_translation_tables.svg)
@@ -308,10 +312,6 @@ MMU Translation Tables
 Virtual-Address to Physical-Address Identity Mapping:
 
 ![](diagram_images/va-to-pa-identity-mapping.svg)
-
-Memory access sequence from a load instruction
-
-![](diagram_images/load~instruction-memory-access-with-mmu-and-caches.svg)
 
 See VS Code code tour 8.
 
