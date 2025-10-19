@@ -1,12 +1,3 @@
-#
-# Copyright (c) 2022-2025, German Rivera
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# NOTE: This crate is not meant to be built with the native compiler.
-# A dependency on a cross-compiler must be specified in the client
-# crate. See example client crates in the sample_apps folder.
-#
 name = "aarch64_baremetal_ada"
 description = "AArch64 Baremetal Ada"
 version = "1.0.0"
@@ -16,6 +7,10 @@ tags = ["aarch64"]
 authors = ["J. German Rivera"]
 maintainers = ["J. German Rivera <jgrivera67@gmail.com>"]
 maintainers-logins = ["jgrivera67"]
+
+[[depends-on]]
+gnat_aarch64_elf = "*"
+gprbuild = "*" # needed by alire-index CI builds
 
 [[actions]]
 type = "test"
@@ -31,4 +26,3 @@ directory = "embedded_apps/uart_boot_loader_server"
 type = "test"
 command = ["alr", "build"]
 directory = "host_apps/uart_boot_loader_client"
-

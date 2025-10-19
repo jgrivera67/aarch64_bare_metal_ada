@@ -8,7 +8,7 @@ abstract project Aarch64_Baremetal_Ada_Compiler_Flags is
 
    type Board_Type is ("rpi4", "rpi5");
 
-   Board : Board_Type := External ("Board", "");
+   Board : Board_Type := External ("Board", "rpi5");
 
    type CPU_Core_Type is ("arm_cortex_a72", "arm_cortex_a76");
 
@@ -42,7 +42,7 @@ abstract project Aarch64_Baremetal_Ada_Compiler_Flags is
 
    type Uart_Boot_Type is ("no", "yes");
 
-   Uart_Boot : Uart_Boot_Type := External ("Uart_Boot", "");
+   Uart_Boot : Uart_Boot_Type := External ("Uart_Boot", "yes");
 
    Linker_Script_Path := "";
    case Uart_Boot is
